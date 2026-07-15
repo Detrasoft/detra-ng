@@ -1,0 +1,96 @@
+/* ==============================
+   Textarea Component
+   ============================== */
+
+.ds-textarea-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 100%;
+}
+
+/* ── Label ── */
+.ds-textarea__label {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--input-label);
+  margin-bottom: var(--space-1);
+}
+
+.ds-textarea__required {
+  color: var(--color-danger);
+  margin-left: 2px;
+}
+
+/* ── Container ── */
+.ds-textarea__container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* ── Field ── */
+.ds-textarea__field {
+  width: 100%;
+  min-height: 42px;
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-family-sans);
+  font-size: var(--text-sm);
+  color: var(--input-text);
+  background-color: var(--input-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--input-border);
+  border-radius: 10px;
+  transition: all var(--transition-fast);
+  outline: none;
+  resize: vertical;
+}
+
+.ds-textarea__field::placeholder {
+  color: var(--input-placeholder);
+}
+
+.ds-textarea__field:hover:not(:disabled) {
+  border-color: var(--input-border-hover);
+}
+
+.ds-textarea__field:focus {
+  border-color: var(--input-border-focus);
+  box-shadow: var(--input-focus-shadow);
+}
+
+/* ── Error State ── */
+.ds-textarea--error .ds-textarea__field {
+  border-color: var(--color-danger);
+}
+
+.ds-textarea--error .ds-textarea__field:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+.ds-textarea__error {
+  font-size: var(--text-xs);
+  color: var(--color-danger);
+  margin-top: var(--space-1);
+}
+
+/* ── Hint ── */
+.ds-textarea__hint {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-top: var(--space-1);
+}
+
+/* ── Disabled ── */
+.ds-textarea--disabled .ds-textarea__field {
+  background-color: var(--input-disabled-bg);
+  color: var(--input-disabled-text);
+  border-color: var(--input-disabled-border);
+  cursor: not-allowed;
+}
+
+.ds-textarea--disabled .ds-textarea__label {
+  color: var(--input-disabled-label);
+}

@@ -1,0 +1,20 @@
+.ds-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  background: color-mix(in srgb, var(--badge-color) 12%, transparent);
+  color: var(--badge-text);
+  border: 1px solid color-mix(in srgb, var(--badge-color) 25%, transparent);
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.4;
+  max-width: 100%;
+}
+
+.ds-badge__label {
+  display: inline-block;
+}

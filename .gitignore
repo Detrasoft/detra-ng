@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+*.log
+.DS_Store
+.vscode/
+.idea/
+out/
+tmp/
+
+# Secrets — NUNCA versionar
+.npmrc
+.env
+.env.*

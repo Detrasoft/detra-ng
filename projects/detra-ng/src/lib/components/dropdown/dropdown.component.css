@@ -1,0 +1,223 @@
+/* ============================================
+   Dropdown Component — Styles
+   ============================================ */
+
+/* ── Wrapper ── */
+.ds-dropdown-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 100%;
+}
+
+/* ── Label ── */
+.ds-dropdown__label {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--input-label);
+  margin-bottom: var(--space-1);
+}
+
+.ds-dropdown__required {
+  color: var(--color-danger);
+  margin-left: 2px;
+}
+
+/* ══════════════════════════════════════════
+   Field Container
+   ══════════════════════════════════════════ */
+.ds-dropdown__container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.ds-dropdown__field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 42px;
+  padding: var(--space-1) var(--space-3);
+  font-family: var(--font-family-sans);
+  font-size: var(--text-sm);
+  color: var(--input-text);
+  background-color: var(--input-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--input-border);
+  border-radius: 10px;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+  text-align: left;
+}
+
+.ds-dropdown__field:hover:not(.ds-dropdown__field--disabled) {
+  border-color: var(--input-border-hover);
+}
+
+.ds-dropdown__field--focused {
+  border-color: var(--input-border-focus);
+  box-shadow: var(--input-focus-shadow);
+}
+
+.ds-dropdown__field--disabled {
+  background-color: var(--input-disabled-bg);
+  color: var(--input-disabled-text);
+  border-color: var(--input-disabled-border);
+  cursor: not-allowed;
+}
+
+.ds-dropdown__value {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ds-dropdown__placeholder {
+  color: var(--input-placeholder);
+}
+
+/* ══════════════════════════════════════════
+   Dropdown Toggle Button Icon
+   ══════════════════════════════════════════ */
+.ds-dropdown__toggle-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--autocomplete-toggle-color);
+  transition: transform var(--transition-fast);
+  margin-left: var(--space-2);
+}
+
+.ds-dropdown__toggle-icon--open {
+  transform: rotate(180deg);
+}
+
+/* ══════════════════════════════════════════
+   Overlay Panel
+   ══════════════════════════════════════════ */
+.ds-dropdown__panel {
+  background: var(--dropdown-bg);
+  border: 1px solid var(--dropdown-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--dropdown-shadow);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  max-height: 280px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  animation: dsDropdownFadeIn 0.18s ease-out;
+}
+
+.ds-dropdown__panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ds-dropdown__panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ds-dropdown__panel::-webkit-scrollbar-thumb {
+  background: var(--theme-text-faint);
+  border-radius: var(--radius-full);
+}
+
+@keyframes dsDropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── List Items ── */
+.ds-dropdown__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-family-sans);
+  font-size: var(--text-sm);
+  color: var(--dropdown-item-text);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+  text-align: left;
+}
+
+.ds-dropdown__item:hover {
+  background-color: var(--dropdown-item-hover);
+}
+
+.ds-dropdown__item--active {
+  background-color: var(--color-primary-600);
+  color: var(--color-text-inverse);
+}
+
+.ds-dropdown__item--active:hover {
+  background-color: var(--color-primary-700);
+}
+
+.ds-dropdown__item--selected {
+  font-weight: var(--font-bold);
+  color: var(--color-primary-400);
+}
+
+.ds-dropdown__item--active.ds-dropdown__item--selected {
+  color: var(--color-text-inverse);
+}
+
+/* ── Empty state ── */
+.ds-dropdown__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  user-select: none;
+}
+
+/* ══════════════════════════════════════════
+   States
+   ══════════════════════════════════════════ */
+
+/* Error */
+.ds-dropdown--error .ds-dropdown__field {
+  border-color: var(--color-danger);
+}
+
+.ds-dropdown--error .ds-dropdown__field--focused {
+  box-shadow:
+    0 0 0 3px rgba(255, 51, 102, 0.15),
+    0 0 10px rgba(255, 51, 102, 0.2);
+}
+
+.ds-dropdown__error {
+  font-size: var(--text-xs);
+  color: var(--color-danger);
+  margin-top: var(--space-1);
+}
+
+/* Hint */
+.ds-dropdown__hint {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-top: var(--space-1);
+}
+
+/* Disabled */
+.ds-dropdown--disabled .ds-dropdown__label {
+  color: var(--input-disabled-label);
+}

@@ -1,0 +1,96 @@
+{
+  "name": "@detrasoft.com/detra-ng",
+  "version": "0.1.0",
+  "description": "DetraSoft Angular Design System — componentes standalone com CSS puro para Angular 17+",
+  "keywords": [
+    "angular",
+    "design-system",
+    "components",
+    "ui",
+    "detrasoft",
+    "standalone"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "DetraSoft",
+    "url": "https://detrasoft.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/detrasoft/detra-ng.git"
+  },
+  "bugs": {
+    "url": "https://github.com/detrasoft/detra-ng/issues"
+  },
+  "homepage": "https://github.com/detrasoft/detra-ng#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:watch": "node scripts/build.mjs --watch",
+    "build:dry": "node scripts/build.mjs --dry-run",
+    "clean": "rimraf dist",
+    "prepublishOnly": "node scripts/prepublish.mjs && npm run build",
+    "prepublish:test": "node scripts/prepublish.mjs",
+    "test": "echo \"No tests yet\" && exit 0",
+    "lint": "echo \"No lint configured\" && exit 0",
+    "version:patch": "npm version patch",
+    "version:minor": "npm version minor",
+    "version:major": "npm version major",
+    "publish:beta": "npm run build && npm version prerelease --preid=beta && npm publish --tag=beta --access=public",
+    "publish:next": "npm run build && npm version prerelease --preid=next && npm publish --tag=next --access=public",
+    "publish:latest": "npm run build && npm publish --access=public",
+    "pack": "npm pack"
+  },
+  "peerDependencies": {
+    "@angular/animations": ">=17.0.0 <20.0.0",
+    "@angular/cdk": ">=17.0.0 <20.0.0",
+    "@angular/common": ">=17.0.0 <20.0.0",
+    "@angular/compiler": ">=17.0.0 <20.0.0",
+    "@angular/core": ">=17.0.0 <20.0.0",
+    "@angular/forms": ">=17.0.0 <20.0.0",
+    "@angular/platform-browser": ">=17.0.0 <20.0.0",
+    "rxjs": ">=7.0.0",
+    "tslib": "^2.6.0",
+    "zone.js": ">=0.13.0"
+  },
+  "dependencies": {
+    "tslib": "^2.6.0"
+  },
+  "devDependencies": {
+    "@angular/animations": "^17.3.0",
+    "@angular/cdk": "^17.3.0",
+    "@angular/common": "^17.3.0",
+    "@angular/compiler": "^17.3.0",
+    "@angular/core": "^17.3.0",
+    "@angular/forms": "^17.3.0",
+    "@angular/platform-browser": "^17.3.0",
+    "@types/node": "^20.0.0",
+    "rimraf": "^5.0.0",
+    "rxjs": "~7.8.0",
+    "typescript": "~5.2.0",
+    "zone.js": "~0.14.0"
+  },
+  "sideEffects": false,
+  "module": "dist/esm/index.js",
+  "es2020": "dist/esm/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "esm": "./dist/esm/index.js",
+      "default": "./dist/esm/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ]
+}

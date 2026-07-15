@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist/esm",
+    "declarationDir": "./dist/types",
+    "rootDir": "./projects/detra-ng/src"
+  },
+  "include": ["projects/detra-ng/src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "**/*.spec.ts"]
+}

@@ -1,0 +1,230 @@
+/* ==============================
+   Tree Component — Styles
+   ============================== */
+
+.ds-tree {
+  font-family: inherit;
+  font-size: var(--text-sm);
+  color: var(--theme-text-body);
+  user-select: none;
+  -webkit-user-select: none;
+  min-width: max-content;
+}
+
+/* ── Node ── */
+.ds-tree__node {
+  position: relative;
+}
+
+.ds-tree__node--root {
+  margin-bottom: var(--space-1);
+}
+
+/* ── Row ── */
+.ds-tree__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: default;
+  transition: background var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.ds-tree__row:hover {
+  background: var(--surface-bg-hover);
+}
+
+.ds-tree__row--selectable {
+  cursor: pointer;
+}
+
+.ds-tree__row--selected {
+  background: rgba(var(--color-primary-500-rgb, 59, 130, 246), 0.08);
+}
+
+.ds-tree__row--selected:hover {
+  background: rgba(var(--color-primary-500-rgb, 59, 130, 246), 0.12);
+}
+
+/* ── Toggle button ── */
+.ds-tree__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  color: var(--theme-text-muted);
+  cursor: pointer;
+  border-radius: 6px;
+  flex-shrink: 0;
+  padding: 0;
+  transition: all var(--transition-fast);
+}
+
+.ds-tree__toggle:hover {
+  color: var(--color-primary-500);
+  background: rgba(var(--color-primary-500-rgb, 59, 130, 246), 0.1);
+}
+
+.ds-tree__toggle svg {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ds-tree__toggle--open svg {
+  transform: rotate(90deg);
+}
+
+.ds-tree__toggle-placeholder {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+/* ── Checkbox ── */
+.ds-tree__checkbox {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.ds-tree__checkbox-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  border: 1.5px solid var(--checkbox-border, rgba(255, 255, 255, 0.2));
+  background: var(--checkbox-bg, rgba(255, 255, 255, 0.04));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.ds-tree__checkbox:hover .ds-tree__checkbox-box {
+  border-color: var(--color-primary-400);
+  background: var(--checkbox-hover-bg, rgba(255, 255, 255, 0.08));
+  box-shadow: 0 0 8px rgba(var(--color-primary-500-rgb, 59, 130, 246), 0.15);
+}
+
+.ds-tree__checkbox-box--checked {
+  background: var(--color-primary-500) !important;
+  border-color: var(--color-primary-500) !important;
+  box-shadow:
+    0 0 10px rgba(var(--color-primary-500-rgb, 59, 130, 246), 0.3),
+    0 0 3px rgba(var(--color-primary-500-rgb, 59, 130, 246), 0.2);
+}
+
+.ds-tree__checkbox-box--indeterminate {
+  background: var(--color-primary-400) !important;
+  border-color: var(--color-primary-400) !important;
+  box-shadow: 0 0 8px rgba(var(--color-primary-500-rgb, 59, 130, 246), 0.25);
+}
+
+.ds-tree__checkbox-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.ds-tree__checkbox-icon path {
+  stroke: #fff;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+/* ── Icon ── */
+.ds-tree__icon {
+  font-size: 14px;
+  color: var(--theme-text-muted);
+  flex-shrink: 0;
+  width: 18px;
+  text-align: center;
+  transition: color var(--transition-fast);
+}
+
+.ds-tree__row:hover .ds-tree__icon {
+  color: var(--color-primary-400);
+}
+
+.ds-tree__row--selected .ds-tree__icon {
+  color: var(--color-primary-500);
+}
+
+/* ── Label ── */
+.ds-tree__label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-regular);
+  color: var(--theme-text-body);
+  line-height: var(--leading-normal);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.ds-tree__row--selected .ds-tree__label {
+  color: var(--color-primary-500);
+  font-weight: var(--font-medium);
+}
+
+/* ── Badge ── */
+.ds-tree__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.02em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface-bg-hover, rgba(255, 255, 255, 0.06));
+  color: var(--theme-text-muted);
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.ds-tree__badge--active {
+  background: rgba(var(--color-primary-500-rgb, 59, 130, 246), 0.15);
+  color: var(--color-primary-400);
+  box-shadow: 0 0 6px rgba(var(--color-primary-500-rgb, 59, 130, 246), 0.1);
+}
+
+/* ── Children container (collapsible) ── */
+.ds-tree__children {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition:
+    max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.25s ease;
+  position: relative;
+}
+
+.ds-tree__children--expanded {
+  max-height: 100000px;
+  opacity: 1;
+}
+
+/* ── Vertical guide lines ── */
+.ds-tree__children--expanded::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 28px;
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    var(--surface-border-strong, rgba(255, 255, 255, 0.08)),
+    transparent
+  );
+  pointer-events: none;
+}

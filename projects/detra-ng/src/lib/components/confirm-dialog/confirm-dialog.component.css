@@ -1,0 +1,204 @@
+/* ==============================
+   Confirm Dialog Component
+   ============================== */
+
+.ds-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--color-surface-overlay);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: ds-dialog-fadeIn 0.25s ease-out;
+  padding: var(--space-4);
+}
+
+.ds-dialog-card {
+  width: 100%;
+  max-width: 480px;
+  background: var(--surface-bg);
+  border: 1px solid var(--color-glass-border);
+  border-radius: 24px;
+  padding: var(--space-6);
+  box-shadow: var(--shadow-xl), var(--shadow-glow);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  transform: translateY(0);
+  animation: ds-dialog-slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.ds-dialog-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  text-align: center;
+}
+
+.ds-dialog-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--color-warning) 15%, transparent);
+  color: var(--color-warning);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  animation: ds-dialog-pulseGlowWarning 2.5s ease-in-out infinite;
+}
+
+@keyframes ds-dialog-pulseGlowWarning {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 193, 7, 0);
+  }
+  50% {
+    box-shadow: 0 0 15px 4px rgba(255, 193, 7, 0.25);
+  }
+}
+
+.ds-dialog-title {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: var(--font-bold);
+  color: var(--theme-text);
+  font-family: var(--font-family-sans);
+}
+
+.ds-dialog-body {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ds-dialog-message {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: var(--font-medium);
+  color: var(--theme-text);
+  font-family: var(--font-family-sans);
+  line-height: var(--leading-normal);
+}
+
+.ds-dialog-hint {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--theme-text-muted);
+  font-family: var(--font-family-sans);
+  line-height: var(--leading-relaxed);
+}
+
+.ds-dialog-footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ds-dialog-btn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  font-family: var(--font-family-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: 44px;
+}
+
+.ds-dialog-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ds-dialog-btn--cancel {
+  color: var(--theme-text-secondary);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+}
+
+.ds-dialog-btn--cancel:hover:not(:disabled) {
+  background: var(--surface-bg-hover);
+  color: var(--theme-text);
+  border-color: var(--surface-border-strong);
+}
+
+.ds-dialog-btn--confirm {
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 102, 255, 0.25);
+}
+
+.ds-dialog-btn--confirm:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--color-primary-400), var(--color-primary-500));
+  box-shadow: 0 6px 16px rgba(0, 102, 255, 0.35);
+  transform: translateY(-1px);
+}
+
+.ds-dialog-btn--confirm:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Spinner */
+.ds-dialog-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: ds-dialog-spin 0.6s linear infinite;
+}
+
+@keyframes ds-dialog-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ds-dialog-fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ds-dialog-slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (min-width: 480px) {
+  .ds-dialog-footer {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+
+  .ds-dialog-btn--cancel {
+    order: 1;
+    width: auto;
+  }
+
+  .ds-dialog-btn--confirm {
+    order: 2;
+    width: auto;
+  }
+}

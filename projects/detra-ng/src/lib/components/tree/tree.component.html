@@ -1,0 +1,93 @@
+<!-- ══════════════════════════════════════════
+     ds-tree — Recursive Hierarchical Tree
+     ══════════════════════════════════════════ -->
+
+<!-- Entry point: renders the root-level nodes -->
+<div class="ds-tree" role="tree">
+  <ng-container *ngFor="let node of value; trackBy: trackByKey">
+    <ng-container
+      *ngTemplateOutlet="nodeTemplate; context: { $implicit: node, depth: 0 }"
+    ></ng-container>
+  </ng-container>
+</div>
+
+<!-- ── Recursive node template ── -->
+<ng-template #nodeTemplate let-node let-depth="depth">
+  <div class="ds-tree__node" [class.ds-tree__node--root]="depth === 0" role="treeitem">
+    <!-- Node Row -->
+    <div
+      class="ds-tree__row"
+      [class.ds-tree__row--selectable]="node.selectable !== false && node.key"
+      [class.ds-tree__row--selected]="isSelected(node)"
+      [style.padding-left.px]="depth * 24 + 8"
+    >
+      <!-- Expand/Collapse toggle -->
+      <button
+        *ngIf="hasChildren(node)"
+        class="ds-tree__toggle"
+        [class.ds-tree__toggle--open]="node.expanded"
+        (click)="toggleExpand(node, $event)"
+        type="button"
+        aria-label="Expandir/Colapsar"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 6 15 12 9 18" />
+        </svg>
+      </button>
+      <span *ngIf="!hasChildren(node)" class="ds-tree__toggle-placeholder"></span>
+
+      <!-- Checkbox (checkbox mode) -->
+      <label
+        *ngIf="selectionMode === 'checkbox'"
+        class="ds-tree__checkbox"
+        (click)="onCheckboxToggle(node, $event)"
+      >
+        <span
+          class="ds-tree__checkbox-box"
+          [class.ds-tree__checkbox-box--checked]="getCheckState(node) === 'checked'"
+          [class.ds-tree__checkbox-box--indeterminate]="getCheckState(node) === 'indeterminate'"
+        >
+          <!-- Checkmark -->
+          <svg *ngIf="getCheckState(node) === 'checked'" class="ds-tree__checkbox-icon"
+            viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 8.5L6.5 12L13 4" />
+          </svg>
+          <!-- Indeterminate dash -->
+          <svg *ngIf="getCheckState(node) === 'indeterminate'" class="ds-tree__checkbox-icon"
+            viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 8H12" />
+          </svg>
+        </span>
+      </label>
+
+      <!-- Icon -->
+      <i *ngIf="node.icon" class="ds-tree__icon" [class]="node.icon"></i>
+
+      <!-- Label -->
+      <span class="ds-tree__label">{{ node.label }}</span>
+
+      <!-- Selection badge for branch nodes -->
+      <span
+        *ngIf="selectionMode === 'checkbox' && hasChildren(node)"
+        class="ds-tree__badge"
+        [class.ds-tree__badge--active]="getSelectionCount(node).selected > 0"
+      >
+        {{ getSelectionCount(node).selected }}/{{ getSelectionCount(node).total }}
+      </span>
+    </div>
+
+    <!-- Children (collapsible) -->
+    <div
+      *ngIf="hasChildren(node)"
+      class="ds-tree__children"
+      [class.ds-tree__children--expanded]="node.expanded"
+    >
+      <ng-container *ngFor="let child of node.children; trackBy: trackByKey">
+        <ng-container
+          *ngTemplateOutlet="nodeTemplate; context: { $implicit: child, depth: depth + 1 }"
+        ></ng-container>
+      </ng-container>
+    </div>
+  </div>
+</ng-template>

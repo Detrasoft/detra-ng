@@ -1,0 +1,322 @@
+/* ============================================
+   Datepicker Component — Styles
+   ============================================ */
+
+/* ── Wrapper ── */
+.ds-datepicker-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 100%;
+}
+
+/* ── Label ── */
+.ds-datepicker__label {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--input-label);
+  margin-bottom: var(--space-1);
+}
+
+.ds-datepicker__required {
+  color: var(--color-danger);
+  margin-left: 2px;
+}
+
+/* ── Field Container ── */
+.ds-datepicker__container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.ds-datepicker__field {
+  width: 100%;
+  height: 42px;
+  padding: var(--space-2) var(--space-10) var(--space-2) var(--space-3);
+  font-family: var(--font-family-sans);
+  font-size: var(--text-sm);
+  color: var(--input-text);
+  background-color: var(--input-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--input-border);
+  border-radius: 10px;
+  transition: all var(--transition-fast);
+  outline: none;
+  cursor: pointer;
+}
+
+.ds-datepicker__field::placeholder {
+  color: var(--input-placeholder);
+}
+
+.ds-datepicker__field:hover:not(:disabled) {
+  border-color: var(--input-border-hover);
+}
+
+.ds-datepicker__field:focus {
+  border-color: var(--input-border-focus);
+  box-shadow: var(--input-focus-shadow);
+}
+
+/* ── Calendar toggle button ── */
+.ds-datepicker__toggle {
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition:
+    color var(--transition-fast),
+    background-color var(--transition-fast);
+}
+
+.ds-datepicker__toggle:hover:not(:disabled) {
+  color: var(--color-text-primary);
+  background-color: var(--surface-bg-hover);
+}
+
+.ds-datepicker__toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+/* ══════════════════════════════════════════
+   Calendar Dropdown
+   ══════════════════════════════════════════ */
+.ds-datepicker__dropdown {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  left: 0;
+  z-index: 100;
+  min-width: 296px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-4);
+  animation: dsDatepickerFadeIn 0.2s ease-out;
+}
+
+/* ── Navigation header ── */
+.ds-datepicker__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+
+.ds-datepicker__nav-title {
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--color-text-primary);
+  user-select: none;
+}
+
+.ds-datepicker__nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.ds-datepicker__nav-btn:hover {
+  background-color: var(--surface-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.ds-datepicker__nav-title--btn {
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-1) var(--space-2);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.ds-datepicker__nav-title--btn:hover {
+  background-color: var(--surface-bg-hover);
+}
+
+/* ── Weekday headers ── */
+.ds-datepicker__weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: var(--space-1);
+}
+
+.ds-datepicker__weekday {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  user-select: none;
+}
+
+/* ── Day grid ── */
+.ds-datepicker__days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.ds-datepicker__day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1;
+  max-height: 40px;
+  font-family: var(--font-family-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--font-normal);
+  color: var(--color-text-primary);
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  user-select: none;
+}
+
+.ds-datepicker__day:hover:not(:disabled):not(.ds-datepicker__day--selected) {
+  background-color: var(--surface-bg-hover);
+}
+
+/* Other month */
+.ds-datepicker__day--other {
+  color: var(--color-text-muted);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* Today indicator */
+.ds-datepicker__day--today:not(.ds-datepicker__day--selected) {
+  border-color: var(--color-neutral-300);
+  font-weight: var(--font-semibold);
+}
+
+/* Selected */
+.ds-datepicker__day--selected {
+  background-color: var(--color-primary-600);
+  color: var(--color-text-inverse);
+  font-weight: var(--font-semibold);
+  border-color: var(--color-primary-600);
+}
+
+.ds-datepicker__day--selected:hover:not(:disabled) {
+  background-color: var(--color-primary-700);
+  border-color: var(--color-primary-700);
+}
+
+/* Disabled */
+.ds-datepicker__day--disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ── Year grid ── */
+.ds-datepicker__years {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-2);
+  padding-bottom: var(--space-2);
+}
+
+.ds-datepicker__year {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) 0;
+  font-family: var(--font-family-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--color-text-primary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.ds-datepicker__year:hover:not(.ds-datepicker__year--selected) {
+  background-color: var(--surface-bg-hover);
+}
+
+.ds-datepicker__year--selected {
+  background-color: var(--color-primary-600);
+  color: var(--color-text-inverse);
+  font-weight: var(--font-bold);
+}
+
+/* ══════════════════════════════════════════
+   States
+   ══════════════════════════════════════════ */
+
+/* Error */
+.ds-datepicker--error .ds-datepicker__field {
+  border-color: var(--color-danger);
+}
+
+.ds-datepicker--error .ds-datepicker__field:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+.ds-datepicker__error {
+  font-size: var(--text-xs);
+  color: var(--color-danger);
+  margin-top: var(--space-1);
+}
+
+/* Hint */
+.ds-datepicker__hint {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-top: var(--space-1);
+}
+
+/* Disabled */
+.ds-datepicker--disabled .ds-datepicker__field {
+  background-color: var(--input-disabled-bg);
+  color: var(--input-disabled-text);
+  border-color: var(--input-disabled-border);
+  cursor: not-allowed;
+}
+
+.ds-datepicker--disabled .ds-datepicker__label {
+  color: var(--input-disabled-label);
+}
+
+/* ── Animation ── */
+@keyframes dsDatepickerFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

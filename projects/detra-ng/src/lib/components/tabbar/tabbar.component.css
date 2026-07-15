@@ -1,0 +1,325 @@
+/* ==============================
+   Tabbar Component — ds-tabbar
+   ============================== */
+
+:host {
+  display: block;
+  position: relative;
+}
+
+.ds-tabbar {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ══════════════════════════════════════════════
+   DESKTOP — Horizontal tab bar (always visible)
+   ══════════════════════════════════════════════ */
+.ds-tabbar__nav-desktop {
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  margin-bottom: var(--space-6);
+  padding-bottom: 2px;
+  border-bottom: 2px solid var(--color-neutral-100);
+}
+
+.ds-tabbar__tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--space-3) var(--space-4);
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font-family: var(--font-family-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  white-space: nowrap;
+  cursor: pointer;
+  position: relative;
+  transition:
+    color var(--transition-fast),
+    background var(--transition-fast);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.ds-tabbar__tab:hover {
+  color: var(--color-primary-600);
+  background: rgba(0, 190, 183, 0.04);
+}
+
+.ds-tabbar__tab--active {
+  color: var(--color-primary-600);
+}
+
+.ds-tabbar__tab--active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-primary-600);
+  border-radius: 2px 2px 0 0;
+}
+
+.ds-tabbar__icon {
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.ds-tabbar__label {
+  display: inline;
+}
+
+.ds-tabbar__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-600);
+  color: #fff;
+  font-size: 10px;
+  font-weight: var(--font-bold);
+  line-height: 1;
+}
+
+/* ── Tab Content Panel ── */
+.ds-tabbar__panel {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── Panel enter animation ── */
+.ds-tabbar__panel-enter {
+  position: relative;
+}
+
+.ds-tabbar__panel-active {
+  animation: ds-tab-enter 0.4s ease-out both;
+}
+
+.ds-tabbar__panel-enter[hidden] {
+  display: none !important;
+}
+
+.ds-tabbar__panel-enter::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 190, 183, 0.06),
+    rgba(255, 255, 255, 0.12),
+    rgba(0, 190, 183, 0.04),
+    transparent
+  );
+  animation: ds-glass-shimmer 0.8s 0.1s ease-out both;
+  pointer-events: none;
+  z-index: 1;
+  border-radius: inherit;
+}
+
+@keyframes ds-tab-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.995);
+    filter: blur(2px);
+  }
+  60% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes ds-glass-shimmer {
+  0% {
+    left: -60%;
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    left: 120%;
+    opacity: 0;
+  }
+}
+
+/* ── Mobile-only elements (hidden on desktop) ── */
+.ds-tabbar__mobile-header,
+.ds-tabbar__dropdown,
+.ds-tabbar__overlay {
+  display: none;
+}
+
+/* ══════════════════════════════════════════════
+   DESKTOP — Hide tab labels on narrow desktop
+   ══════════════════════════════════════════════ */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .ds-tabbar__label {
+    display: none;
+  }
+}
+
+/* ══════════════════════════════════════════════
+   MOBILE — Compact trigger + dropdown panel
+   ══════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Hide desktop horizontal bar */
+  .ds-tabbar__nav-desktop {
+    display: none;
+  }
+
+  /* ── Mobile trigger header ── */
+  .ds-tabbar__mobile-header {
+    display: block;
+    margin-bottom: var(--space-4);
+    position: relative;
+    z-index: 100;
+  }
+
+  .ds-tabbar__trigger {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    width: 100%;
+    padding: var(--space-3) var(--space-4);
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    color: var(--color-text-primary);
+    font-family: var(--font-family-sans);
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    position: relative;
+    z-index: 11;
+  }
+
+  .ds-tabbar__trigger:hover,
+  .ds-tabbar__trigger:focus-visible {
+    border-color: var(--color-primary-400);
+    box-shadow: 0 0 0 3px rgba(0, 190, 183, 0.1);
+  }
+
+  .ds-tabbar__trigger-icon {
+    font-size: 1rem;
+    color: var(--color-primary-600);
+    flex-shrink: 0;
+  }
+
+  .ds-tabbar__trigger-label {
+    flex: 1;
+    text-align: left;
+  }
+
+  .ds-tabbar__trigger-chevron {
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  .ds-tabbar__trigger-chevron--open {
+    transform: rotate(180deg);
+  }
+
+  /* ── Dropdown panel ── */
+  .ds-tabbar__dropdown {
+    display: block;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    padding: var(--space-2);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    transition:
+      opacity 0.2s ease,
+      transform 0.2s ease,
+      visibility 0.2s;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  .ds-tabbar__dropdown--open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  .ds-tabbar__dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    width: 100%;
+    padding: var(--space-3) var(--space-4);
+    border: none;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--color-text-primary);
+    font-family: var(--font-family-sans);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    cursor: pointer;
+    transition:
+      background var(--transition-fast),
+      color var(--transition-fast);
+    text-align: left;
+  }
+
+  .ds-tabbar__dropdown-item:hover {
+    background: rgba(0, 190, 183, 0.06);
+    color: var(--color-primary-600);
+  }
+
+  .ds-tabbar__dropdown-item--active {
+    background: rgba(0, 190, 183, 0.1);
+    color: var(--color-primary-600);
+    font-weight: var(--font-semibold);
+  }
+
+  .ds-tabbar__dropdown-icon {
+    font-size: 0.85rem;
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .ds-tabbar__dropdown-label {
+    flex: 1;
+  }
+
+  /* ── Overlay ── */
+  .ds-tabbar__overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+    background: rgba(0, 0, 0, 0.08);
+  }
+}
