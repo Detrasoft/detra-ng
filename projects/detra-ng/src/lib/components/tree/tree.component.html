@@ -19,7 +19,12 @@
       class="ds-tree__row"
       [class.ds-tree__row--selectable]="node.selectable !== false && node.key"
       [class.ds-tree__row--selected]="isSelected(node)"
+      [class.ds-tree__row--clickable]="selectionMode === 'single' && node.selectable !== false && !!node.key"
       [style.padding-left.px]="depth * 24 + 8"
+      (click)="onRowClick(node, $event)"
+      (keydown.enter)="onRowClick(node, $event)"
+      tabindex="0"
+      role="button"
     >
       <!-- Expand/Collapse toggle -->
       <button

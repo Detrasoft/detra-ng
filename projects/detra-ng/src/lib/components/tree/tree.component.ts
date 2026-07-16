@@ -156,6 +156,40 @@ export class TreeComponent {
     this.selectionChange.emit([...this.selection]);
   }
 
+  /* ══════════════════════════════════════════
+     Selection — Single Mode
+     ══════════════════════════════════════════ */
+
+  /**
+   * Handler called when a row is clicked in `single` mode.
+   * Selects the clicked node (or toggles off if already selected).
+   * Expands the node automatically on first click.
+   */
+  onRowClick(node: TreeNode, event: Event): void {
+    if (this.selectionMode !== 'single') return;
+    if (node.selectable === false || !node.key) return;
+
+    event.stopPropagation();
+
+    // Toggle off if already selected (UX opcional — pode-se preferir manter sempre selecionado).
+    const isAlready = this.selection.some((s) => s.key === node.key);
+    this.selection = isAlready ? [] : [node];
+
+    // Auto-expand ao selecionar (UX melhoria)
+    if (this.hasChildren(node) && !node.expanded) {
+      node.expanded = true;
+    }
+
+    this.selectionChange.emit([...this.selection]);
+  }
+
+  /** Programmatic selection — útil para selects externos ou testes. */
+  selectNode(node: TreeNode): void {
+    if (node.selectable === false || !node.key) return;
+    this.selection = [node];
+    this.selectionChange.emit([...this.selection]);
+  }
+
   private toggleSingleNode(node: TreeNode): void {
     const idx = this.selection.findIndex((s) => s.key === node.key);
     if (idx >= 0) {

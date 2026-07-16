@@ -47,6 +47,16 @@
   background: rgba(var(--color-primary-500-rgb, 59, 130, 246), 0.12);
 }
 
+/* Cursor explícito para rows clicáveis em modo single (acessibilidade + feedback) */
+.ds-tree__row--clickable {
+  cursor: pointer;
+}
+
+.ds-tree__row--clickable:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: -2px;
+}
+
 /* ── Toggle button ── */
 .ds-tree__toggle {
   display: flex;
