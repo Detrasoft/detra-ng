@@ -1,4 +1,5 @@
 import {
+  ChangeDetectionStrategy,
   Component,
   EventEmitter,
   Input,
@@ -36,6 +37,7 @@ export interface TreeNode {
 @Component({
   selector: 'ds-tree',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule],
   templateUrl: './tree.component.html',
   styleUrl: './tree.component.css',

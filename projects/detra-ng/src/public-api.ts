@@ -1,5 +1,5 @@
 /**
- * Public API of @detrasoft/detra-ng
+ * Public API of @detrasoft.com/detra-ng
  *
  * Importe desta forma:
  *   import {
@@ -7,7 +7,7 @@
  *     InputComponent,
  *     ToastService,
  *     provideHttpDetraSearchAdapter,
- *   } from '@detrasoft/detra-ng';
+ *   } from '@detrasoft.com/detra-ng';
  */
 
 // Search (HTTP-agnostic adapter contract)
@@ -15,6 +15,4 @@ export * from './lib/search/search.types';
 export * from './lib/search/search.tokens';
 
 // All components
-export * from './lib/components';
-
-// HTML Editor is re-exported by './lib/components' already
+export * from './lib/components/index';

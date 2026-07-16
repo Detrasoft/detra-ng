@@ -1,98 +1,136 @@
-# @detrasoft/detra-ng
+# @detrasoft.com/detra-ng
 
-> Design System Angular standalone da **DetraSoft** — componentes prontos para uso, com CSS puro e zero dependências externas fora do Angular CDK.
+Biblioteca de componentes Angular standalone para o design system **Detra**.
+Pensada para ser consumida por apps Angular 17+ que precisam de formulários,
+pickers, listas, árvores, dialogs, toasts, search genérica e editor HTML
+sem dependências de UI de terceiros (Material, PrimeNG, etc.).
 
-[![npm version](https://img.shields.io/npm/v/@detrasoft/detra-ng.svg)](https://www.npmjs.com/package/@detrasoft/detra-ng)
-[![npm downloads](https://img.shields.io/npm/dm/@detrasoft/detra-ng.svg)](https://www.npmjs.com/package/@detrasoft/detra-ng)
-[![license](https://img.shields.io/npm/l/@detrasoft/detra-ng.svg)](https://github.com/detrasoft/detra-ng/blob/main/LICENSE)
+> **Escopo:** `@detrasoft.com/detra-ng`
+> **Versão atual:** `0.2.0` — Angular 17 / 18 / 19 / 20 (peer-deps).
 
-## ✨ Recursos
+---
 
-- **Angular 17+ standalone components** — sem `NgModule`, sem boilerplate.
-- **CSS puro** — sem SCSS, sem Tailwind, sem CSS-in-JS. Apenas variáveis CSS para tema.
-- **OnPush + Change Detection otimizado** — precomputação de view-model para grandes listas.
-- **Totalmente tipado** — types completos, sem `any` na API pública.
-- **Acessível** — ARIA labels, navegação por teclado, focus management.
-- **Tree-shakeable** — importe só o que precisa.
+## ✨ O que vem na caixa
+
+| Categoria | Componentes / APIs |
+|---|---|
+| Primitivos | `BadgeComponent`, `ButtonComponent` |
+| Form controls (CVA) | `InputComponent`, `TextareaComponent`, `CheckboxComponent` |
+| Layout | `TabbarComponent`, `TabComponent` |
+| Pickers | `DatepickerComponent` (locale pt-BR / en) |
+| Dropdowns | `DropdownComponent`, `AutocompleteComponent` |
+| Dialogs | `DialogComponent`, `ConfirmDialogComponent` |
+| Toast | `ToastComponent`, `ToastService` |
+| Search | `SearchComponent`, `SearchModalComponent`, `provideHttpDetraSearchAdapter`, `DETRA_SEARCH_ADAPTER` token |
+| Lists | `ListComponent`, `ListColumnDirective` |
+| Trees | `TreeComponent` |
+| Errors | `ErrorPanelComponent` |
+| Editor | `HtmlEditorComponent` |
+
+Todos os componentes são **standalone** (sem `NgModule`) e com
+`ChangeDetectionStrategy.OnPush`.
+
+---
 
 ## 📦 Instalação
 
 ```bash
-npm install @detrasoft/detra-ng
+npm install @detrasoft.com/detra-ng @angular/cdk@^20
 ```
 
-## 🚀 Uso Rápido
+Dependências de peer já vêm com qualquer app Angular padrão:
 
-```typescript
-// app.config.ts
-import { provideAnimations } from '@angular/platform-browser/animations';
-import { ApplicationConfig } from '@angular/core';
+- `@angular/core` (>=17 <21)
+- `@angular/common`
+- `@angular/forms`
+- `rxjs`
+- `@angular/cdk` (>=17 <21)
 
-export const appConfig: ApplicationConfig = {
-  providers: [provideAnimations()],
-};
-```
+---
 
-```typescript
-// seu-componente.ts
-import { Component } from '@angular/core';
-import { ButtonComponent, InputComponent } from '@detrasoft/detra-ng';
+## 🚀 Uso rápido
+
+```ts
+import { Component, signal } from '@angular/core';
+import { ButtonComponent, InputComponent, ToastService } from '@detrasoft.com/detra-ng';
 
 @Component({
-  selector: 'app-login',
+  selector: 'app-demo',
   standalone: true,
   imports: [ButtonComponent, InputComponent],
   template: `
-    <ds-input label="E-mail" type="email" [(ngModel)]="email"></ds-input>
-    <ds-input label="Senha" type="password" [(ngModel)]="password"></ds-input>
-    <ds-button variant="primary" (click)="login()">Entrar</ds-button>
+    <ds-input label="Email" [(ngModel)]="email"></ds-input>
+    <ds-button variant="primary" (click)="send()">Enviar</ds-button>
   `,
 })
-export class LoginComponent {}
+export class DemoComponent {
+  email = signal('');
+  constructor(private toast: ToastService) {}
+  send() {
+    this.toast.success('Enviado com sucesso!');
+  }
+}
 ```
 
-> ⚠️ Os componentes são standalone — basta importá-los no array `imports` do seu componente.
+### Search genérica (HTTP)
 
-## 🧩 Componentes Disponíveis (v0.1.0)
+```ts
+import { ApplicationConfig } from '@angular/core';
+import { provideHttpDetraSearchAdapter } from '@detrasoft.com/detra-ng';
 
-| Componente       | Seletor           | Descrição                                        |
-| ---------------- | ----------------- | ------------------------------------------------ |
-| Button           | `ds-button`       | Botão com variantes e estados                    |
-| Input            | `ds-input`        | Input com label, hint, error e máscara           |
-| Textarea         | `ds-textarea`     | Textarea com label e validação                   |
-| Checkbox         | `ds-checkbox`     | Checkbox acessível                               |
-| Badge            | `ds-badge`        | Selo colorido customizável                       |
-| Dropdown         | `ds-dropdown`     | Select com overlay e busca por teclado           |
-| Autocomplete     | `ds-autocomplete` | Input com sugestões (single/múltiplo)            |
-| Datepicker       | `ds-datepicker`   | Calendário com i18n (PT-BR/EN)                   |
-| Dialog           | `ds-dialog`       | Modal genérico via CDK Overlay                   |
-| ConfirmDialog    | `ds-confirm-dialog` | Dialog de confirmação com loading state        |
-| Toast            | `ds-toast`        | Notificações globais via signal                  |
-| ToastService     | `ToastService`    | API para disparar toasts                         |
-| Tabbar           | `ds-tabbar`       | Abas com header mobile                          |
-| Tab              | `ds-tab`          | Painel filho do Tabbar                          |
-| List             | `ds-list`         | Tabela (desktop) + cards (mobile) + paginação   |
-| ListColumn       | `ds-list-column`  | Diretiva de coluna para List                    |
-| Search           | `ds-search`       | Busca com autocomplete + filtro                  |
-| SearchModal      | `ds-search-modal` | Busca em modal fullscreen                        |
-| HtmlEditor       | `ds-html-editor`  | Editor rich-text com toolbar completa            |
-| Tree             | `ds-tree`         | Árvore com checkbox/single + cascata             |
-| ErrorPanel       | `ds-error-panel`  | Exibição de erros de validação de API            |
-
-## 🌍 i18n (Datepicker)
-
-```typescript
-import {
-  DatepickerComponent,
-  DATEPICKER_LOCALE_PT_BR,
-  DATEPICKER_LOCALE_EN,
-} from '@detrasoft/detra-ng';
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideHttpDetraSearchAdapter({
+      endpoint: '/api/search',
+      debounceMs: 300,
+    }),
+  ],
+};
 ```
 
-## 🤝 Contribuindo
+### Toast global
 
-PRs e issues são bem-vindos em [github.com/detrasoft/detra-ng](https://github.com/detrasoft/detra-ng).
+Importe `ToastHostComponent` no componente raiz:
 
-## 📄 Licença
+```ts
+import { ToastHostComponent } from '@detrasoft.com/detra-ng';
 
-MIT © [DetraSoft](https://detrasoft.com)
+@Component({
+  standalone: true,
+  imports: [RouterOutlet, ToastHostComponent],
+  template: `<router-outlet /><ds-toast-host />`,
+})
+export class AppComponent {}
+```
+
+---
+
+## 🎨 Theming
+
+A biblioteca é **theme-agnostic** — traz os componentes, não a paleta.
+Quem consome (ex.: `dut-ui`) injeta suas próprias variáveis CSS
+(`--ds-color-primary`, `--ds-radius-*`, etc.) ou aplica classes utilitárias.
+
+---
+
+## 🛠 Build (para mantenedores)
+
+```bash
+# Requisitos: Node 20+, Angular CLI 20
+npm install
+npm run build
+# saída em dist/detra-ng/
+```
+
+Publicação:
+
+```bash
+cd dist/detra-ng
+npm publish --access public
+```
+
+---
+
+## 📝 Licença
+
+Proprietary — © DetraSoft.

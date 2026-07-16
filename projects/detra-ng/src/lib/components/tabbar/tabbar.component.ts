@@ -1,5 +1,6 @@
 import {
   AfterContentInit,
+  ChangeDetectionStrategy,
   Component,
   ContentChildren,
   EventEmitter,
@@ -30,6 +31,7 @@ import { TabComponent } from './tab.component';
 @Component({
   selector: 'ds-tabbar',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule],
   styleUrl: './tabbar.component.css',
   template: `
