@@ -1,6 +1,6 @@
 {
   "name": "@detrasoft.com/detra-ng",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "DetraSoft Angular Design System — standalone components com CSS puro para Angular 17-20",
   "keywords": [
     "angular",
@@ -31,6 +31,7 @@
     "build:watch": "ng-packagr -p projects/detra-ng/ng-package.json --watch",
     "clean": "rimraf dist",
     "prepublishOnly": "npm run build",
+    "prepack": "npm run build",
     "test": "echo \"No tests yet\" && exit 0",
     "lint": "echo \"No lint configured\" && exit 0",
     "version:patch": "npm version patch",
