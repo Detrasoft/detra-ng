@@ -34,6 +34,10 @@ import { TabComponent } from './tab.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule],
   styleUrl: './tabbar.component.css',
+  host: {
+    '[class.ds-tabbar--vertical]': "layoutMode === 'vertical'",
+    '[class.ds-tabbar--horizontal]': "layoutMode === 'horizontal'",
+  },
   template: `
     <div class="ds-tabbar">
       <!-- ═══ DESKTOP: horizontal tab bar ═══ -->
@@ -46,6 +50,8 @@ import { TabComponent } from './tab.component';
           [class.ds-tabbar__tab--active]="activeTab === tab.id"
           [attr.aria-selected]="activeTab === tab.id"
           [attr.aria-controls]="'panel-' + tab.id"
+          [attr.aria-label]="tab.header"
+          [attr.title]="tab.header"
           (click)="selectTab(tab.id)"
         >
           <i *ngIf="tab.icon" [class]="tab.icon" class="ds-tabbar__icon"></i>
@@ -112,6 +118,20 @@ export class TabbarComponent implements AfterContentInit {
   @Input() activeTab = '';
   @Output() activeTabChange = new EventEmitter<string>();
   @ContentChildren(TabComponent) tabs!: QueryList<TabComponent>;
+
+  /**
+   * Controls the orientation of the tab bar.
+   *
+   * - `'horizontal'` (default): tabs run across the top with a bottom border
+   *   and an underline indicator on the active tab.
+   * - `'vertical'`: tabs stack along the left side with a right border and a
+   *   vertical indicator on the active tab. On mobile (≤768px) the labels
+   *   collapse so only icons remain.
+   *
+   * The default is fully backwards compatible with every existing consumer
+   * that does not pass this input.
+   */
+  @Input() layoutMode: 'horizontal' | 'vertical' = 'horizontal';
 
   mobileOpen = false;
 

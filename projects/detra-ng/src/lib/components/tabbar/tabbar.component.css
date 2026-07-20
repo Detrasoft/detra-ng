@@ -13,6 +13,84 @@
 }
 
 /* ══════════════════════════════════════════════
+   VERTICAL LAYOUT — left rail with stacked tabs
+   ══════════════════════════════════════════════
+   Triggered by [ds-tabbar][layoutMode="vertical"] (host class
+   `ds-tabbar--vertical`). Horizontal rules below remain the default and
+   are progressively overridden only when this modifier is present. */
+
+:host(.ds-tabbar--vertical) .ds-tabbar {
+  flex-direction: row;
+  align-items: stretch;
+  gap: var(--space-5);
+}
+
+:host(.ds-tabbar--vertical) .ds-tabbar__nav-desktop {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  width: 200px;
+  min-width: 200px;
+  margin-bottom: 0;
+  padding-bottom: 0;
+  padding-right: 2px;
+  border-bottom: none;
+  border-right: 2px solid var(--color-neutral-100);
+}
+
+:host(.ds-tabbar--vertical) .ds-tabbar__tab {
+  justify-content: flex-start;
+  text-align: left;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+
+:host(.ds-tabbar--vertical) .ds-tabbar__tab--active::after {
+  top: 0;
+  bottom: 0;
+  left: auto;
+  right: -2px;
+  width: 2px;
+  height: auto;
+  border-radius: 0 2px 0 0;
+}
+
+:host(.ds-tabbar--vertical) .ds-tabbar__panel {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Vertical + mobile: collapse to icon-only rail ── */
+@media (max-width: 768px) {
+  :host(.ds-tabbar--vertical) .ds-tabbar {
+    gap: var(--space-3);
+  }
+
+  :host(.ds-tabbar--vertical) .ds-tabbar__nav-desktop {
+    width: 56px;
+    min-width: 56px;
+    align-items: center;
+    padding-right: 0;
+  }
+
+  :host(.ds-tabbar--vertical) .ds-tabbar__tab {
+    justify-content: center;
+    padding: var(--space-3);
+    width: 100%;
+  }
+
+  :host(.ds-tabbar--vertical) .ds-tabbar__label {
+    display: none;
+  }
+
+  :host(.ds-tabbar--vertical) .ds-tabbar__icon {
+    font-size: 1rem;
+  }
+}
+
+/* ══════════════════════════════════════════════
    DESKTOP — Horizontal tab bar (always visible)
    ══════════════════════════════════════════════ */
 .ds-tabbar__nav-desktop {
