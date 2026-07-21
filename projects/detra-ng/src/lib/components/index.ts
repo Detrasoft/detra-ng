@@ -27,6 +27,7 @@ export {
   DATEPICKER_LOCALE_PT_BR,
   DATEPICKER_LOCALE_EN,
 } from './datepicker/datepicker.component';
+export { TimeComponent } from './time/time.component';
 
 // Dropdowns & overlays
 export { DropdownComponent } from './dropdown/dropdown.component';

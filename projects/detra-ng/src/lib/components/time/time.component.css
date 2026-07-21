@@ -1,0 +1,174 @@
+/* ============================================
+   Time Component — Styles
+   ============================================ */
+
+.ds-time-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1, 4px);
+  width: 100%;
+}
+
+.ds-time__label {
+  display: block;
+  font-size: var(--text-sm, 14px);
+  font-weight: var(--font-medium, 500);
+  color: var(--input-label, #1f1840);
+  margin-bottom: var(--space-1, 4px);
+}
+
+.ds-time__required {
+  color: var(--color-danger, #ff3366);
+  margin-left: 2px;
+}
+
+.ds-time__container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.ds-time__field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 42px;
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  font-family: var(--font-family-sans, inherit);
+  font-size: var(--text-sm, 14px);
+  color: var(--input-text, #1f1840);
+  background-color: var(--input-bg, #ffffff);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--input-border, rgba(75, 61, 134, 0.18));
+  border-radius: 10px;
+  transition: all 150ms ease;
+  outline: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.ds-time__field:hover:not(:disabled) {
+  border-color: var(--input-border-hover, rgba(75, 61, 134, 0.32));
+}
+
+.ds-time__field--focused {
+  border-color: var(--input-border-focus, #896ff4);
+  box-shadow: var(--input-focus-shadow, 0 0 0 4px rgba(137, 111, 244, 0.18));
+}
+
+.ds-time__field:disabled {
+  background-color: var(--input-disabled-bg, #e2ddf0);
+  color: var(--input-disabled-text, #7a70a8);
+  border-color: var(--input-disabled-border, rgba(75, 61, 134, 0.08));
+  cursor: not-allowed;
+}
+
+.ds-time__value {
+  flex: 1;
+}
+
+.ds-time__placeholder {
+  color: var(--input-placeholder, #a095c4);
+}
+
+.ds-time__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--clay-text-soft, #7a70a8);
+  margin-left: 8px;
+}
+
+/* ══════════════════════════════════════════
+   Picker Overlay Panel (conforme imagem)
+   ══════════════════════════════════════════ */
+.ds-time__picker-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px 24px;
+  background: var(--dropdown-bg, #ffffff);
+  border: 1px solid var(--dropdown-border, rgba(75, 61, 134, 0.18));
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: var(--dropdown-shadow, 0 12px 32px rgba(75, 61, 134, 0.15));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  user-select: none;
+  min-width: 180px;
+  animation: dsTimeFadeIn 0.18s ease-out;
+  z-index: 10000;
+}
+
+@keyframes dsTimeFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ds-time__picker-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.ds-time__arrow-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  color: var(--clay-text-soft, #7a70a8);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 150ms ease;
+}
+
+.ds-time__arrow-btn:hover {
+  background-color: var(--clay-bg-soft, #f5f2fc);
+  color: var(--input-border-focus, #896ff4);
+}
+
+.ds-time__num-display {
+  font-family: var(--font-family-sans, inherit);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--input-text, #1f1840);
+  min-width: 28px;
+  text-align: center;
+  letter-spacing: 0.5px;
+}
+
+.ds-time__picker-sep {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--input-text, #1f1840);
+  margin-bottom: 2px;
+}
+
+.ds-time--error .ds-time__field {
+  border-color: var(--color-danger, #ff3366);
+}
+
+.ds-time__error {
+  font-size: var(--text-xs, 12px);
+  color: var(--color-danger, #ff3366);
+  margin-top: var(--space-1, 4px);
+}
+
+.ds-time__hint {
+  font-size: var(--text-xs, 12px);
+  color: var(--color-text-muted, #7a70a8);
+  margin-top: var(--space-1, 4px);
+}

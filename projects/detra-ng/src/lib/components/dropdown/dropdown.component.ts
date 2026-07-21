@@ -23,6 +23,7 @@ import {
   FlexibleConnectedPositionStrategy,
 } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
+import { Subscription } from 'rxjs';
 
 /* ═══════════════════════════════════════════
    Dropdown Component
@@ -67,7 +68,6 @@ import { TemplatePortal } from '@angular/cdk/portal';
           aria-haspopup="listbox"
           (click)="onToggle($event)"
           (keydown)="onKeydown($event)"
-          (blur)="onBlur()"
         >
           <span
             class="ds-dropdown__value"
@@ -187,6 +187,8 @@ export class DropdownComponent implements ControlValueAccessor, OnDestroy {
 
   /* ── Internals ── */
   private overlayRef: OverlayRef | null = null;
+  private backdropSub?: Subscription;
+  private justClosedByBackdrop = false;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private value: any = null;
 
@@ -234,8 +236,6 @@ export class DropdownComponent implements ControlValueAccessor, OnDestroy {
       return this.placeholder;
     }
 
-    // Check if the value is an object reference that differs from the options array
-    // Try to find the exact matching item from the options
     const selectedItem = this.findMatchingItem(this.value) || this.value;
     return this.getItemLabel(selectedItem);
   }
@@ -250,7 +250,6 @@ export class DropdownComponent implements ControlValueAccessor, OnDestroy {
         return String(val);
       }
     }
-    // Fallback: check commonly used fields like valor, value, name, label
     if (item.valor != null && String(item.valor).trim() !== '') return String(item.valor);
     if (item.value != null && String(item.value).trim() !== '') return String(item.value);
     if (item.label != null && String(item.label).trim() !== '') return String(item.label);
@@ -267,17 +266,11 @@ export class DropdownComponent implements ControlValueAccessor, OnDestroy {
     return null;
   }
 
-  /**
-   * Resolves a dot-separated field path on an object.
-   */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private resolveField(obj: any, path: string): any {
     return path.split('.').reduce((acc, key) => acc?.[key], obj);
   }
 
-  /**
-   * Matches value correctly even if references differ
-   */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private findMatchingItem(val: any): any {
     if (!this.options || val == null) return null;
@@ -285,7 +278,6 @@ export class DropdownComponent implements ControlValueAccessor, OnDestroy {
       if (this.optionValue) {
         return this.resolveField(opt, this.optionValue) === val;
       }
-      // If we use ID comparison (common pattern)
       if (opt.id != null && val.id != null) {
         return opt.id === val.id;
       }
@@ -294,10 +286,6 @@ export class DropdownComponent implements ControlValueAccessor, OnDestroy {
   }
 
   /* ── Input events ── */
-
-  onBlur(): void {
-    this.onTouchedFn();
-  }
 
   onKeydown(event: KeyboardEvent): void {
     if (!this.isPanelOpen) {
@@ -310,7 +298,6 @@ export class DropdownComponent implements ControlValueAccessor, OnDestroy {
         event.preventDefault();
         this.openPanel();
 
-        // Find current selected index
         if (this.hasValue) {
           const match = this.findMatchingItem(this.value);
           this.activeIndex = match ? this.options.indexOf(match) : 0;
@@ -324,20 +311,20 @@ export class DropdownComponent implements ControlValueAccessor, OnDestroy {
     switch (event.key) {
       case 'ArrowDown':
         event.preventDefault();
-        this.activeIndex = (this.activeIndex + 1) % this.options.length;
+        this.activeIndex = (this.activeIndex + 1) % (this.options?.length || 1);
         this.scrollToActive();
         break;
 
       case 'ArrowUp':
         event.preventDefault();
-        this.activeIndex = this.activeIndex <= 0 ? this.options.length - 1 : this.activeIndex - 1;
+        this.activeIndex = this.activeIndex <= 0 ? (this.options?.length || 1) - 1 : this.activeIndex - 1;
         this.scrollToActive();
         break;
 
       case 'Enter':
       case ' ':
         event.preventDefault();
-        if (this.activeIndex >= 0 && this.activeIndex < this.options.length) {
+        if (this.options && this.activeIndex >= 0 && this.activeIndex < this.options.length) {
           this.selectItem(this.options[this.activeIndex]);
         }
         break;
@@ -352,6 +339,11 @@ export class DropdownComponent implements ControlValueAccessor, OnDestroy {
   onToggle(event: Event): void {
     event.stopPropagation();
     if (this.disabled) return;
+
+    if (this.justClosedByBackdrop) {
+      this.justClosedByBackdrop = false;
+      return;
+    }
 
     if (this.isPanelOpen) {
       this.closePanel();
@@ -376,6 +368,7 @@ export class DropdownComponent implements ControlValueAccessor, OnDestroy {
     this.value = val;
     this.onChangeFn(val);
     this.onChange.emit(val);
+    this.onTouchedFn();
     this.closePanel();
   }
 
@@ -390,7 +383,7 @@ export class DropdownComponent implements ControlValueAccessor, OnDestroy {
      ══════════════════════════════════════════ */
 
   private openPanel(): void {
-    if (this.isPanelOpen || this.disabled || !this.options || this.options.length === 0) return;
+    if (this.isPanelOpen || this.disabled) return;
 
     const positionStrategy: FlexibleConnectedPositionStrategy = this.overlay
       .position()
@@ -425,10 +418,16 @@ export class DropdownComponent implements ControlValueAccessor, OnDestroy {
     this.overlayRef.attach(portal);
 
     this.isPanelOpen = true;
+    this.cdr.markForCheck();
 
-    this.overlayRef.backdropClick().subscribe(() => {
+    this.backdropSub?.unsubscribe();
+    this.backdropSub = this.overlayRef.backdropClick().subscribe(() => {
+      this.justClosedByBackdrop = true;
       this.closePanel();
-      this.cdr.markForCheck();
+      this.onTouchedFn();
+      setTimeout(() => {
+        this.justClosedByBackdrop = false;
+      }, 200);
     });
   }
 
@@ -437,7 +436,9 @@ export class DropdownComponent implements ControlValueAccessor, OnDestroy {
       this.overlayRef.dispose();
       this.overlayRef = null;
     }
+    this.backdropSub?.unsubscribe();
     this.isPanelOpen = false;
+    this.cdr.markForCheck();
   }
 
   private destroyOverlay(): void {
