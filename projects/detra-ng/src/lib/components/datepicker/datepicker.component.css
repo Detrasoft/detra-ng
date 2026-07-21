@@ -29,23 +29,26 @@
   position: relative;
   display: flex;
   align-items: center;
+  width: 100%;
 }
 
 .ds-datepicker__field {
   width: 100%;
-  height: 42px;
-  padding: var(--space-2) var(--space-10) var(--space-2) var(--space-3);
+  min-height: 44px;
+  padding: 10px 48px 10px 16px;
   font-family: var(--font-family-sans);
-  font-size: var(--text-sm);
+  font-size: var(--text-sm, 0.95rem);
+  font-weight: 500;
   color: var(--input-text);
   background-color: var(--input-bg);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--input-border);
-  border-radius: 10px;
+  border-radius: var(--border-radius-md, 12px);
   transition: all var(--transition-fast);
   outline: none;
   cursor: pointer;
+  box-sizing: border-box;
 }
 
 .ds-datepicker__field::placeholder {
@@ -64,27 +67,28 @@
 /* ── Calendar toggle button ── */
 .ds-datepicker__toggle {
   position: absolute;
-  right: 2px;
+  right: 6px;
   top: 50%;
   transform: translateY(-50%);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   background: transparent;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm, 8px);
   color: var(--color-text-muted);
   cursor: pointer;
   transition:
     color var(--transition-fast),
     background-color var(--transition-fast);
+  z-index: 2;
 }
 
 .ds-datepicker__toggle:hover:not(:disabled) {
   color: var(--color-text-primary);
-  background-color: var(--surface-bg-hover);
+  background-color: var(--surface-bg-hover, rgba(0, 0, 0, 0.05));
 }
 
 .ds-datepicker__toggle:disabled {
