@@ -64,8 +64,22 @@ import { ListColumnDirective } from './list-column.directive';
               *ngFor="let col of columns"
               [style.width]="col.width || null"
               [style.text-align]="col.align"
+              [class.ds-list__th--sortable]="col.sortable"
+              [class]="col.headerClass"
+              (click)="col.sortable && toggleSort(col)"
             >
-              {{ col.label }}
+              <div class="ds-list__th-content">
+                <span>{{ col.label }}</span>
+                <span *ngIf="col.sortable" class="ds-list__sort-icon">
+                  <ng-container *ngIf="sortKey === col.key; else unsorted">
+                    <span *ngIf="sortOrder === 'asc'">▲</span>
+                    <span *ngIf="sortOrder === 'desc'">▼</span>
+                  </ng-container>
+                  <ng-template #unsorted>
+                    <span class="ds-list__sort-idle">⇅</span>
+                  </ng-template>
+                </span>
+              </div>
             </th>
             <th *ngIf="actionsTemplate" class="ds-list__actions-th">
               {{ actionsLabel }}
@@ -73,30 +87,81 @@ import { ListColumnDirective } from './list-column.directive';
           </tr>
         </thead>
         <tbody>
-          <tr
-            *ngFor="let row of paginatedData; trackBy: _trackByFn"
-            (click)="onRowClick($event, row)"
-            [class.ds-list__row--clickable]="hasRowClick"
-          >
-            <td *ngFor="let col of columns" [style.text-align]="col.align">
-              <ng-container *ngIf="col.cellTemplate; else defaultCell">
-                <ng-container
-                  *ngTemplateOutlet="
-                    col.cellTemplate;
-                    context: { $implicit: resolveValue(row, col.key), row: row }
-                  "
-                ></ng-container>
-              </ng-container>
-              <ng-template #defaultCell>{{ resolveValue(row, col.key) }}</ng-template>
-            </td>
-            <td *ngIf="actionsTemplate" class="ds-list__actions-td">
-              <div class="ds-list__actions-wrapper">
-                <ng-container
-                  *ngTemplateOutlet="actionsTemplate; context: { $implicit: row }"
-                ></ng-container>
-              </div>
-            </td>
-          </tr>
+          <!-- ── Grouped Rows ── -->
+          <ng-container *ngIf="groupBy; else flatRows">
+            <ng-container *ngFor="let group of groupedData">
+              <tr class="ds-list__group-row">
+                <td [attr.colspan]="columnCount" class="ds-list__group-cell">
+                  <ng-container *ngIf="groupHeaderTemplate; else defaultGroupHeader">
+                    <ng-container
+                      *ngTemplateOutlet="
+                        groupHeaderTemplate;
+                        context: { $implicit: group.key, groupKey: group.key, items: group.items }
+                      "
+                    ></ng-container>
+                  </ng-container>
+                  <ng-template #defaultGroupHeader>
+                    <div class="ds-list__group-header">
+                      <strong>{{ group.key }}</strong>
+                      <span class="ds-list__group-count">({{ group.items.length }})</span>
+                    </div>
+                  </ng-template>
+                </td>
+              </tr>
+              <tr
+                *ngFor="let row of group.items; trackBy: _trackByFn"
+                (click)="onRowClick($event, row)"
+                [class.ds-list__row--clickable]="hasRowClick"
+              >
+                <td *ngFor="let col of columns" [style.text-align]="col.align">
+                  <ng-container *ngIf="col.cellTemplate; else defaultGroupCell">
+                    <ng-container
+                      *ngTemplateOutlet="
+                        col.cellTemplate;
+                        context: { $implicit: resolveValue(row, col.key), row: row }
+                      "
+                    ></ng-container>
+                  </ng-container>
+                  <ng-template #defaultGroupCell>{{ resolveValue(row, col.key) }}</ng-template>
+                </td>
+                <td *ngIf="actionsTemplate" class="ds-list__actions-td">
+                  <div class="ds-list__actions-wrapper">
+                    <ng-container
+                      *ngTemplateOutlet="actionsTemplate; context: { $implicit: row }"
+                    ></ng-container>
+                  </div>
+                </td>
+              </tr>
+            </ng-container>
+          </ng-container>
+
+          <!-- ── Flat Rows (default) ── -->
+          <ng-template #flatRows>
+            <tr
+              *ngFor="let row of sortedPaginatedData; trackBy: _trackByFn"
+              (click)="onRowClick($event, row)"
+              [class.ds-list__row--clickable]="hasRowClick"
+            >
+              <td *ngFor="let col of columns" [style.text-align]="col.align">
+                <ng-container *ngIf="col.cellTemplate; else defaultCell">
+                  <ng-container
+                    *ngTemplateOutlet="
+                      col.cellTemplate;
+                      context: { $implicit: resolveValue(row, col.key), row: row }
+                    "
+                  ></ng-container>
+                </ng-container>
+                <ng-template #defaultCell>{{ resolveValue(row, col.key) }}</ng-template>
+              </td>
+              <td *ngIf="actionsTemplate" class="ds-list__actions-td">
+                <div class="ds-list__actions-wrapper">
+                  <ng-container
+                    *ngTemplateOutlet="actionsTemplate; context: { $implicit: row }"
+                  ></ng-container>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
 
           <!-- Empty state -->
           <tr *ngIf="paginatedData.length === 0">
@@ -266,15 +331,27 @@ export class ListComponent implements OnChanges, AfterViewInit, OnDestroy {
   @Input() serverPagination = false;
   @Input() totalRecords?: number;
 
+  // Grouping & Sorting Inputs
+  @Input() groupBy?: string;
+  @Input() sortKey?: string;
+  @Input() sortOrder: 'asc' | 'desc' = 'asc';
+
   // ── Outputs ──
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   @Output() rowClick = new EventEmitter<any>();
   @Output() pageChange = new EventEmitter<number>();
+  @Output() sortChange = new EventEmitter<{ key: string; order: 'asc' | 'desc' }>();
 
   // ── Content projection ──
   @ContentChildren(ListColumnDirective) columns!: QueryList<ListColumnDirective>;
   @ContentChild('cardTemplate') cardTemplate?: TemplateRef<{ $implicit: unknown }>;
   @ContentChild('actionsTemplate') actionsTemplate?: TemplateRef<{ $implicit: unknown }>;
+  @ContentChild('groupHeaderTemplate') groupHeaderTemplate?: TemplateRef<{
+    $implicit: string;
+    groupKey: string;
+    items: any[];
+  }>;
+
 
   // ── Pagination state ──
   currentPage = 1;
@@ -330,6 +407,42 @@ export class ListComponent implements OnChanges, AfterViewInit, OnDestroy {
     const start = (this.currentPage - 1) * this.pageSize;
     return this.data.slice(start, start + this.pageSize);
   }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get sortedPaginatedData(): any[] {
+    const list = [...this.paginatedData];
+    if (!this.sortKey || this.serverPagination) return list;
+    const key = this.sortKey;
+    const order = this.sortOrder === 'asc' ? 1 : -1;
+    return list.sort((a, b) => {
+      const valA = this.resolveValue(a, key);
+      const valB = this.resolveValue(b, key);
+      if (valA == null && valB == null) return 0;
+      if (valA == null) return 1;
+      if (valB == null) return -1;
+      if (typeof valA === 'string' && typeof valB === 'string') {
+        return valA.localeCompare(valB) * order;
+      }
+      return (valA > valB ? 1 : valA < valB ? -1 : 0) * order;
+    });
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get groupedData(): { key: string; items: any[] }[] {
+    if (!this.groupBy) return [];
+    const groupsMap = new Map<string, any[]>();
+    const rows = this.sortedPaginatedData;
+    for (const row of rows) {
+      const resolved = this.resolveValue(row, this.groupBy);
+      const groupVal = resolved != null && resolved !== '' ? String(resolved) : 'Sem grupo';
+      if (!groupsMap.has(groupVal)) {
+        groupsMap.set(groupVal, []);
+      }
+      groupsMap.get(groupVal)!.push(row);
+    }
+    return Array.from(groupsMap.entries()).map(([key, items]) => ({ key, items }));
+  }
+
 
   get paginationStart(): number {
     const total = this.serverPagination ? this.totalRecords || 0 : this.data.length;
@@ -413,13 +526,18 @@ export class ListComponent implements OnChanges, AfterViewInit, OnDestroy {
   onRowClick(event: Event, row: any): void {
     const target = event.target as HTMLElement;
 
-    // Prevent triggering if clicked inside an action column, a button, or an anchor
+    // Prevent triggering if clicked inside an action column, a button, or an anchor/interactive element
     if (
       target.closest('.ds-list__actions-td') ||
       target.closest('.ds-list__actions-wrapper') ||
       target.closest('.ds-list__card-actions') ||
       target.closest('button') ||
-      target.closest('a')
+      target.closest('a') ||
+      target.closest('input') ||
+      target.closest('select') ||
+      target.closest('ds-button') ||
+      target.closest('ds-search-modal') ||
+      target.closest('app-task-timesheet-control')
     ) {
       return;
     }
@@ -429,10 +547,26 @@ export class ListComponent implements OnChanges, AfterViewInit, OnDestroy {
     }
   }
 
+  toggleSort(col: ListColumnDirective): void {
+    if (!col || !col.sortable) return;
+    if (this.sortKey === col.key) {
+      this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortKey = col.key;
+      this.sortOrder = 'asc';
+    }
+    this.sortChange.emit({ key: this.sortKey, order: this.sortOrder });
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   resolveValue(row: any, key: string): any {
+    if (!row || !key) return '';
+    if (key.includes('.')) {
+      return key.split('.').reduce((acc, part) => (acc != null ? acc[part] : undefined), row);
+    }
     return row[key];
   }
+
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   _trackByFn = (_index: number, item: any): any => {

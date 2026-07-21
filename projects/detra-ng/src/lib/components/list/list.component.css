@@ -47,6 +47,60 @@
   white-space: nowrap;
 }
 
+.ds-list__th--sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.2s ease;
+}
+
+.ds-list__th--sortable:hover {
+  color: var(--theme-text-primary, #1e1b4b);
+}
+
+.ds-list__th-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.ds-list__sort-icon {
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+
+.ds-list__sort-idle {
+  opacity: 0.35;
+}
+
+/* ── Grouped Rows ── */
+.ds-list__group-row {
+  background-color: var(--surface-bg-hover, rgba(137, 111, 244, 0.08));
+}
+
+.ds-list__group-cell {
+  padding: 0.65rem 1rem !important;
+  border-top: 1px solid var(--surface-border-strong, rgba(0, 0, 0, 0.08));
+  border-bottom: 1px solid var(--surface-border-strong, rgba(0, 0, 0, 0.08));
+  font-weight: 700;
+  color: var(--theme-text-primary, #373151);
+}
+
+.ds-list__group-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+}
+
+.ds-list__group-count {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--theme-text-muted, #716b89);
+  background: rgba(255, 255, 255, 0.6);
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}
+
 .ds-list__table td {
   padding: var(--space-3) var(--space-4);
   font-size: var(--text-sm);

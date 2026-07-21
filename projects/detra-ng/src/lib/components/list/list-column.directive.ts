@@ -19,6 +19,8 @@ export class ListColumnDirective {
   @Input() label = '';
   @Input() width = '';
   @Input() align: 'left' | 'center' | 'right' = 'left';
+  @Input() sortable = false;
+  @Input() headerClass = '';
 
   @ContentChild(TemplateRef) cellTemplate?: TemplateRef<{ $implicit: unknown; row: unknown }>;
 }
