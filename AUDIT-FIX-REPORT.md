@@ -2,7 +2,7 @@
 
 **Data:** 2026-07-15
 **Auditor:** Claude (sob supervisão do usuário Michael Souto)
-**Pacote:** `@detrasoft.com/detra-ng` v0.1.0
+**Pacote:** `@detrasoft.com/detra-ng` v0.4.0
 **Caminho fonte:** `/Users/michaelsouto/Documents/projetos-dev/frontend/3.0/detra-ng/`
 **Consumidor:** `dut-ui` (Angular 20 mobile-first, Claymorphism)
 
@@ -10,11 +10,11 @@
 
 ## 1. Resumo executivo
 
-| Severidade | Achados |
-|---|---|
-| 🔴 **BLOQUEANTE** | 4 — `export *` sem `.js`, `.d.ts` sem decorators Angular, `exports` map sem `import`/`require`, `HtmlEditorComponent` importado no barrel mas não exportado |
-| 🟠 **GRAVE** | 3 — README aponta para `@detrasoft/detra-ng` (escopo errado), falta CSS theme Claymorphism, sem `provideHttpDetraSearchAdapter` exportado no barrel |
-| 🟡 **MÉDIO** | 4 — falta `OnPush` em `Tabbar`/`Tree`, repo URL com typo, locales `DATEPICKER_LOCALE_PT_BR`/`EN` não exportados, peer-deps `<20.0.0` mas consumidor está em v20 |
+| Severidade        | Achados                                                                                                                                                         |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🔴 **BLOQUEANTE** | 4 — `export *` sem `.js`, `.d.ts` sem decorators Angular, `exports` map sem `import`/`require`, `HtmlEditorComponent` importado no barrel mas não exportado     |
+| 🟠 **GRAVE**      | 3 — README aponta para `@detrasoft/detra-ng` (escopo errado), falta CSS theme Claymorphism, sem `provideHttpDetraSearchAdapter` exportado no barrel             |
+| 🟡 **MÉDIO**      | 4 — falta `OnPush` em `Tabbar`/`Tree`, repo URL com typo, locales `DATEPICKER_LOCALE_PT_BR`/`EN` não exportados, peer-deps `<20.0.0` mas consumidor está em v20 |
 
 **Diagnóstico central:** a build atual (`scripts/build.mjs`) usa apenas `tsc`, **não o compilador Angular (ngc)**. Isso é a raiz de todos os problemas do .d.ts.
 
@@ -63,24 +63,27 @@ projects/detra-ng/src/
 
 ```ts
 // src/index.ts
-export * from './lib/search/search.types';   // ❌
-export * from './lib/search/search.tokens';  // ❌
-export * from './lib/components';            // ❌
+export * from "./lib/search/search.types"; // ❌
+export * from "./lib/search/search.tokens"; // ❌
+export * from "./lib/components"; // ❌
 ```
 
 **Sintoma no consumidor (`dut-ui`):**
+
 ```
 [X] Vite esbuild: "./lib/search/search.types" is not exported by package "@detrasoft.com/detra-ng"
 [X] ou "default condition should be last"
 ```
 
 **Fix:** adicionar `.js` em todos os `export *` e `import` relativos. Estratégia:
+
 1. Editar manualmente cada `.ts` em `projects/detra-ng/src/`.
 2. **OU** deixar o `tsc` resolver via `"module": "ESNext"` + `"moduleResolution": "Bundler"`.
 
 ### 🔴 3.2 — `.d.ts` emitidos SEM decorators do Angular (causa-raiz)
 
 **Evidência** (`dist/types/lib/components/button/button.component.d.ts`):
+
 ```ts
 export declare class ButtonComponent {
     variant: 'primary' | 'secondary' | ...;   // ❌ sem @Input()
@@ -93,6 +96,7 @@ export declare class ButtonComponent {
 **Causa:** o build usa `tsc` puro. O compilador Angular (`ngc` via `ng-packagr`) é o que sabe emitir `ɵfac`/`ɵcmp` e preservar os decorators como metadata.
 
 **Sintoma no consumidor:**
+
 ```ts
 import { ButtonComponent } from '@detrasoft.com/detra-ng';
 @Component({ imports: [ButtonComponent], template: `<ds-button>...</ds-button>` })
@@ -105,6 +109,7 @@ import { ButtonComponent } from '@detrasoft.com/detra-ng';
 ### 🔴 3.3 — `exports` map com chave `esm` inválida
 
 **Arquivo:** `package.json:21-25`
+
 ```json
 "exports": {
   ".": {
@@ -116,9 +121,10 @@ import { ButtonComponent } from '@detrasoft.com/detra-ng';
 }
 ```
 
-**Problema:** Angular CLI 18+/Vite/esbuild esperam as chaves padrão do Node Conditional Exports: `import`, `require`, `default`, `types`. A chave `"esm"` é ignorada, e o resolver cai no `default` — funciona *por acidente*. Mas se o consumidor setar `"type": "module"` no próprio package.json, o fallback fica ambíguo.
+**Problema:** Angular CLI 18+/Vite/esbuild esperam as chaves padrão do Node Conditional Exports: `import`, `require`, `default`, `types`. A chave `"esm"` é ignorada, e o resolver cai no `default` — funciona _por acidente_. Mas se o consumidor setar `"type": "module"` no próprio package.json, o fallback fica ambíguo.
 
 **Fix:**
+
 ```json
 "exports": {
   ".": {
@@ -133,6 +139,7 @@ import { ButtonComponent } from '@detrasoft.com/detra-ng';
 ### 🔴 3.4 — `HtmlEditorComponent` quebra o build (declarado em comentário mas ausente no barrel)
 
 **Arquivo:** `projects/detra-ng/src/index.ts`
+
 ```ts
 // HTML Editor is re-exported by './lib/components' already
 // ↑ comentário só
@@ -153,6 +160,7 @@ npm install @detrasoft/detra-ng  # ❌ npm 404
 ### 🟠 3.6 — Sem CSS de tema Claymorphism
 
 A `dut-ui` precisou criar manualmente:
+
 - `--clay-primary-500` (#896ff4), `--clay-primary-800` (#4b3d86)
 - `--clay-radius-md/lg/xl`, `--clay-shadow-soft/raised/inset/glow`
 - Mixins: `clay-surface`, `clay-fade-in`, `clay-fade-in-up`
@@ -177,8 +185,9 @@ Plural correto? Verificar com usuário.
 ### 🟡 3.10 — `DATEPICKER_LOCALE_PT_BR` / `_EN` não exportados no barrel
 
 **Arquivo:** `projects/detra-ng/src/lib/components/index.ts:26`
+
 ```ts
-export { DatepickerComponent, type DatepickerLocale } from './datepicker/datepicker.component';
+export { DatepickerComponent, type DatepickerLocale } from "./datepicker/datepicker.component";
 // ❌ faltam: DATEPICKER_LOCALE_PT_BR, DATEPICKER_LOCALE_EN
 ```
 
@@ -189,6 +198,7 @@ export { DatepickerComponent, type DatepickerLocale } from './datepicker/datepic
 ### 🟡 3.11 — Peer-deps bloqueiam Angular 20
 
 **Arquivo:** `package.json:42-49`
+
 ```json
 "@angular/core": ">=17.0.0 <20.0.0",   // ❌ dut-ui está em v20
 ```
@@ -202,6 +212,7 @@ export { DatepickerComponent, type DatepickerLocale } from './datepicker/datepic
 O compilador TS padrão emite `.d.ts` apenas com o **shape estático** das classes. Decorators Angular (`@Component`, `@Input`, `@Output`, `@HostListener`, `@Inject`) são apagados porque, sem o ng-compiler, o `tsc` não conhece a semântica especial deles.
 
 O ng-compiler (via `ng-packagr`) faz dois trabalhos extras:
+
 1. Mantém os decorators nos `.d.ts` (com `useDefineForClassFields: false` + `emitDecoratorMetadata: true`).
 2. Gera **metadata estático `ɵcmp`/`ɵfac`/`ɵdir`/`ɵpipe`** que permite AOT tree-shaking e detecção de standalone.
 
@@ -239,7 +250,7 @@ Resultado: sem ng-packagr, a lib compila mas é **inutilizável** em Angular. É
 ```json
 {
   "name": "@detrasoft.com/detra-ng",
-  "version": "0.2.0",              // ← bump minor (fix estrutural)
+  "version": "0.2.0", // ← bump minor (fix estrutural)
   "main": "dist/detra-ng/fesm2022/detra-ng.mjs",
   "module": "dist/detra-ng/fesm2022/detra-ng.mjs",
   "typings": "dist/detra-ng/index.d.ts",
@@ -267,7 +278,9 @@ Resultado: sem ng-packagr, a lib compila mas é **inutilizável** em Angular. É
     "tslib": "^2.0.0",
     "zone.js": "~0.14.0 || ~0.15.0"
   },
-  "devDependencies": { /* Angular 20 + ng-packagr 20 */ }
+  "devDependencies": {
+    /* Angular 20 + ng-packagr 20 */
+  }
 }
 ```
 
@@ -297,6 +310,7 @@ npm publish --access public
 ### Etapa F — Apontar dut-ui para a lib
 
 Em `/Users/michaelsouto/Documents/projetos-dev/frontend/3.0/dut-ui`:
+
 1. `npm uninstall @detrasoft.com/detra-ng && npm install @detrasoft.com/detra-ng@0.2.0`
 2. Apagar `src/app/shared/ui/button/{button.component.ts,button.component.scss}` e `input/{input.component.ts,input.component.scss}`.
 3. Atualizar todos os imports `../../shared/ui/button/button.component` → `@detrasoft.com/detra-ng`.
@@ -317,24 +331,24 @@ Manter `src/app/shared/ui/` apontando para `@detrasoft.com/detra-ng` via `paths`
 
 ## 6. Riscos e tradeoffs
 
-| Risco | Mitigação |
-|---|---|
+| Risco                                                           | Mitigação                                                                         |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------- |
 | Bump Angular 17 → 20 na lib pode quebrar componentes existentes | ng-packagr é oficial e battle-tested; rodar `ng build lib` + smoke-test em dut-ui |
-| Publicar 0.2.0 quebraria consumidores em 0.1.0 | OK — ninguém está usando 0.1.0 ainda |
-| ng-packagr impõe FESM2022 (não pode usar `export *` em runtime) | Aceitável — FESM2022 é mais moderno |
-| Mudar de `tsc` para `ngc` pode expor erros latentes | Trataremos cada erro de compilação iterativamente |
+| Publicar 0.2.0 quebraria consumidores em 0.1.0                  | OK — ninguém está usando 0.1.0 ainda                                              |
+| ng-packagr impõe FESM2022 (não pode usar `export *` em runtime) | Aceitável — FESM2022 é mais moderno                                               |
+| Mudar de `tsc` para `ngc` pode expor erros latentes             | Trataremos cada erro de compilação iterativamente                                 |
 
 ---
 
 ## 7. Sequência recomendada para aprovação
 
-| # | Decisão | Recomendação |
-|---|---|---|
-| Q1 | Bump Angular 17→20 na lib? | **Sim** (dut-ui já é v20) |
-| Q2 | Bump versão 0.1.0 → 0.2.0? | **Sim** (mudança estrutural compatível com semver minor) |
-| Q3 | Publicar como `@detrasoft.com/detra-ng` ou `@detrasoft/detra-ng`? | Manter `@detrasoft.com/detra-ng` (escopo bate com prepublish) |
-| Q4 | Adicionar tema Claymorphism à lib? | **Sim** (mandato CEO) |
-| Q5 | Manter `ds-button`/`ds-input` local como fallback? | **Não**, remover; confiar na lib |
+| #   | Decisão                                                           | Recomendação                                                  |
+| --- | ----------------------------------------------------------------- | ------------------------------------------------------------- |
+| Q1  | Bump Angular 17→20 na lib?                                        | **Sim** (dut-ui já é v20)                                     |
+| Q2  | Bump versão 0.1.0 → 0.2.0?                                        | **Sim** (mudança estrutural compatível com semver minor)      |
+| Q3  | Publicar como `@detrasoft.com/detra-ng` ou `@detrasoft/detra-ng`? | Manter `@detrasoft.com/detra-ng` (escopo bate com prepublish) |
+| Q4  | Adicionar tema Claymorphism à lib?                                | **Sim** (mandato CEO)                                         |
+| Q5  | Manter `ds-button`/`ds-input` local como fallback?                | **Não**, remover; confiar na lib                              |
 
 ---
 

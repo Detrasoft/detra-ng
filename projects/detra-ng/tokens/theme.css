@@ -1,0 +1,403 @@
+/* ============================================
+   HEALTH-UI — Centralized Theme Tokens
+   ============================================
+   Este arquivo é a ÚNICA fonte de verdade para
+   cores, bordas, sombras e estilos visuais do
+   sistema. Para alterar qualquer aspecto visual
+   de qualquer componente, edite APENAS este arquivo.
+   ============================================ */
+
+/* ══════════════════════════════════════════════
+   DARK THEME (default)
+   ══════════════════════════════════════════════ */
+html.dark {
+  color-scheme: dark;
+
+  /* ── General ── */
+  --theme-bg: #090e14;
+  --theme-bg-gradient: linear-gradient(145deg, #090e14 0%, #131d2b 100%);
+  --theme-text: #ffffff;
+  --theme-text-secondary: rgba(255, 255, 255, 0.7);
+  --theme-text-muted: rgba(255, 255, 255, 0.5);
+  --theme-text-faint: rgba(255, 255, 255, 0.3);
+  --theme-text-heading: #ffffff;
+  --theme-icon-color: rgba(255, 255, 255, 0.8);
+
+  /* ── Glass & Glow ── */
+  --theme-glass-border: rgba(255, 255, 255, 0.15);
+  --theme-glass-shadow: 0 8px 32px rgba(0, 102, 255, 0.05);
+  --theme-glow: rgba(0, 102, 255, 0.3);
+  --theme-glow-shadow: 0 0 15px rgba(0, 102, 255, 0.3), 0 0 30px rgba(0, 102, 255, 0.15);
+
+  /* ── Surfaces & Cards ── */
+  --surface-bg: rgba(255, 255, 255, 0.03);
+  --surface-bg-raised: rgba(255, 255, 255, 0.02);
+  --surface-bg-hover: rgba(255, 255, 255, 0.05);
+  --surface-border: rgba(255, 255, 255, 0.06);
+  --surface-border-strong: rgba(255, 255, 255, 0.15);
+  --surface-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+
+  /* ── Orbs (decorative) ── */
+  --orb-primary: rgba(0, 102, 255, 0.12);
+  --orb-accent: rgba(0, 229, 255, 0.08);
+  --orb-violet: rgba(128, 0, 255, 0.1);
+
+  /* ── Overlay ── */
+  --overlay-bg: rgba(9, 14, 20, 0.7);
+  --overlay-backdrop: blur(5px);
+
+  /* ── Topbar ── */
+  --topbar-bg: rgba(9, 14, 20, 0.4);
+  --topbar-border: rgba(255, 255, 255, 0.15);
+  --topbar-btn-hover: rgba(0, 102, 255, 0.15);
+  --topbar-progress-track: rgba(0, 102, 255, 0.08);
+
+  /* ── Topbar Dropdown ── */
+  --dropdown-bg: rgba(9, 14, 20, 0.85);
+  --dropdown-border: rgba(0, 102, 255, 0.2);
+  --dropdown-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 15px rgba(0, 102, 255, 0.1);
+  --dropdown-item-text: rgba(255, 255, 255, 0.85);
+  --dropdown-item-hover: rgba(0, 102, 255, 0.15);
+  --dropdown-divider: rgba(255, 255, 255, 0.1);
+
+  /* ── Sidebar ── */
+  --sidebar-bg: rgba(255, 255, 255, 0.03);
+  --sidebar-border: rgba(255, 255, 255, 0.15);
+  --sidebar-brand-border: rgba(255, 255, 255, 0.05);
+  --sidebar-logo-bg: linear-gradient(135deg, rgba(0, 102, 255, 0.25), rgba(0, 229, 255, 0.05));
+  --sidebar-logo-border: rgba(255, 255, 255, 0.2);
+  --sidebar-link-text: rgba(255, 255, 255, 0.6);
+  --sidebar-link-hover-bg: rgba(255, 255, 255, 0.05);
+  --sidebar-link-hover-text: #ffffff;
+  --sidebar-link-active-bg: rgba(0, 102, 255, 0.1);
+  --sidebar-link-expanded-text: #ffffff;
+  --sidebar-submenu-border: rgba(255, 255, 255, 0.05);
+  --sidebar-footer-border: rgba(255, 255, 255, 0.04);
+
+  /* ── Avatar ── */
+  --avatar-bg: linear-gradient(135deg, rgba(0, 102, 255, 0.2), rgba(0, 229, 255, 0.05));
+  --avatar-border: rgba(255, 255, 255, 0.2);
+
+  /* ── Footer ── */
+  --footer-bg: rgba(9, 14, 20, 0.6);
+  --footer-border: var(--theme-glass-border);
+  --footer-shadow: 0 -4px 30px rgba(0, 102, 255, 0.1);
+  --footer-text: rgba(255, 255, 255, 0.5);
+  --footer-meta: rgba(255, 255, 255, 0.3);
+
+  /* ── Content Glass ── */
+  --content-glass-bg: rgba(255, 255, 255, 0.02);
+  --content-glass-border: var(--theme-glass-border);
+  --content-glass-shadow: var(--theme-glass-shadow);
+
+  /* ── Input / Textarea / Datepicker / Autocomplete ── */
+  --input-label: rgba(255, 255, 255, 0.7);
+  --input-bg: rgba(255, 255, 255, 0.08);
+  --input-border: rgba(255, 255, 255, 0.2);
+  --input-border-hover: var(--color-neutral-400);
+  --input-border-focus: var(--color-primary-400);
+  --input-text: #ffffff;
+  --input-placeholder: rgba(255, 255, 255, 0.45);
+  --input-focus-shadow: 0 0 0 3px rgba(0, 102, 255, 0.25), 0 0 12px rgba(0, 102, 255, 0.15);
+  --input-disabled-bg: rgba(255, 255, 255, 0.02);
+  --input-disabled-text: rgba(255, 255, 255, 0.3);
+  --input-disabled-border: rgba(255, 255, 255, 0.05);
+  --input-disabled-label: rgba(255, 255, 255, 0.3);
+
+  /* ── Checkbox ── */
+  --checkbox-border: rgba(255, 255, 255, 0.15);
+  --checkbox-bg: rgba(255, 255, 255, 0.04);
+  --checkbox-hover-bg: rgba(0, 102, 255, 0.06);
+  --checkbox-hover-shadow: 0 0 0 3px rgba(0, 102, 255, 0.08);
+  --checkbox-label: rgba(255, 255, 255, 0.75);
+  --checkbox-label-hover: rgba(255, 255, 255, 0.9);
+  --checkbox-disabled-label: rgba(255, 255, 255, 0.3);
+  --checkbox-disabled-checked-bg: rgba(0, 102, 255, 0.3);
+
+  /* ── Button ── */
+  --btn-outline-bg: rgba(255, 255, 255, 0.1);
+
+  /* ── Toggle (theme switch) ── */
+  --toggle-track-bg: rgba(255, 255, 255, 0.12);
+  --toggle-track-border: rgba(255, 255, 255, 0.15);
+  --toggle-knob-bg: #ffffff;
+  --toggle-icon-color: rgba(255, 255, 255, 0.6);
+
+  /* ── Autocomplete extras ── */
+  --autocomplete-toggle-color: rgba(255, 255, 255, 0.5);
+  --autocomplete-toggle-hover-color: #ffffff;
+  --autocomplete-toggle-hover-bg: rgba(255, 255, 255, 0.08);
+  --autocomplete-chip-remove-color: rgba(255, 255, 255, 0.7);
+  --autocomplete-chip-remove-bg: rgba(255, 255, 255, 0.15);
+  --autocomplete-chip-remove-hover-bg: rgba(255, 255, 255, 0.3);
+  --autocomplete-disabled-chip-bg: rgba(255, 255, 255, 0.1);
+  --autocomplete-disabled-chip-text: rgba(255, 255, 255, 0.4);
+
+  /* ── Skeleton loading ── */
+  --skeleton-from: rgba(255, 255, 255, 0.04);
+  --skeleton-mid: rgba(255, 255, 255, 0.08);
+  --skeleton-to: rgba(255, 255, 255, 0.04);
+
+  /* ── Dashboard ── */
+  --dash-title: #ffffff;
+  --dash-subtitle: rgba(255, 255, 255, 0.5);
+  --dash-section-label: rgba(255, 255, 255, 0.4);
+  --dash-module-bg: rgba(255, 255, 255, 0.03);
+  --dash-module-border: rgba(255, 255, 255, 0.06);
+  --dash-module-border-hover: rgba(255, 255, 255, 0.12);
+  --dash-module-shadow-hover:
+    0 12px 40px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+  --dash-module-label: rgba(255, 255, 255, 0.8);
+  --dash-module-label-hover: #ffffff;
+  --dash-tab-text: rgba(255, 255, 255, 0.5);
+  --dash-tab-hover-text: rgba(255, 255, 255, 0.8);
+  --dash-tab-hover-bg: rgba(255, 255, 255, 0.03);
+  --dash-tab-border: rgba(255, 255, 255, 0.06);
+  --dash-tab-type-bg: rgba(255, 255, 255, 0.06);
+  --dash-tab-type-text: rgba(255, 255, 255, 0.4);
+  --dash-future-bg: rgba(255, 255, 255, 0.02);
+  --dash-future-border: rgba(255, 255, 255, 0.08);
+  --dash-future-title: rgba(255, 255, 255, 0.3);
+  --dash-future-desc: rgba(255, 255, 255, 0.2);
+
+  /* ── My Account ── */
+  --account-header-border: rgba(0, 102, 255, 0.2);
+  --account-card-bg: rgba(9, 14, 20, 0.6);
+  --account-card-border: rgba(0, 102, 255, 0.15);
+  --account-card-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  --account-card-border-hover: rgba(0, 102, 255, 0.4);
+  --account-card-shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 102, 255, 0.1);
+  --account-section-border: rgba(255, 255, 255, 0.1);
+  --account-actions-bg: rgba(0, 102, 255, 0.05);
+  --account-actions-border: rgba(0, 102, 255, 0.2);
+  --account-modal-overlay: rgba(0, 0, 0, 0.7);
+  --account-modal-bg: rgba(9, 14, 20, 0.95);
+  --account-modal-border: rgba(0, 102, 255, 0.3);
+  --account-modal-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 102, 255, 0.15);
+  --account-modal-header-border: rgba(255, 255, 255, 0.1);
+
+  /* ── Login ── */
+  --login-bg: #090e14;
+  --login-card-bg: rgba(255, 255, 255, 0.06);
+  --login-card-border: rgba(255, 255, 255, 0.15);
+  --login-card-shadow:
+    inset 0 0 30px rgba(255, 255, 255, 0.03), 0 15px 35px rgba(0, 102, 255, 0.12);
+
+  /* ── Vidas Sub-Route ── */
+  --subroute-header-border: rgba(255, 255, 255, 0.05);
+  --subroute-header-text: #ffffff;
+  --subroute-close-hover: #ffffff;
+
+  /* ── Splash Screen ── */
+  --splash-bg: #090e14;
+  --splash-orb1: rgba(0, 102, 255, 0.15);
+  --splash-orb2: rgba(0, 229, 255, 0.1);
+  --splash-card-bg: rgba(255, 255, 255, 0.02);
+  --splash-card-border: rgba(255, 255, 255, 0.1);
+  --splash-card-inner-shadow: inset 0 0 20px rgba(255, 255, 255, 0.05);
+  --splash-card-outer-shadow: 0 10px 30px rgba(0, 102, 255, 0.1);
+  --splash-title: #ffffff;
+  --splash-subtitle: rgba(255, 255, 255, 0.5);
+  --splash-loader-track: rgba(255, 255, 255, 0.1);
+}
+
+/* ══════════════════════════════════════════════
+   LIGHT THEME
+   ══════════════════════════════════════════════ */
+html.light {
+  color-scheme: light;
+
+  /* ── General ── */
+  --theme-bg: #f0f4f8;
+  --theme-bg-gradient: linear-gradient(145deg, #f0f4f8 0%, #e2e8f0 100%);
+  --theme-text: #1a222e;
+  --theme-text-secondary: #4e5e78;
+  --theme-text-muted: #8d9aaf;
+  --theme-text-faint: #b8c1d2;
+  --theme-text-heading: #1a222e;
+  --theme-icon-color: #4e5e78;
+
+  /* ── Glass & Glow ── */
+  --theme-glass-border: rgba(0, 50, 100, 0.1);
+  --theme-glass-shadow: 0 8px 32px rgba(0, 50, 100, 0.06);
+  --theme-glow: rgba(0, 102, 255, 0.15);
+  --theme-glow-shadow: 0 0 12px rgba(0, 102, 255, 0.15), 0 0 24px rgba(0, 102, 255, 0.08);
+
+  /* ── Surfaces & Cards ── */
+  --surface-bg: rgba(255, 255, 255);
+  --surface-bg-raised: rgba(255, 255, 255, 0.85);
+  --surface-bg-hover: rgba(0, 50, 100, 0.04);
+  --surface-border: rgba(0, 50, 100, 0.08);
+  --surface-border-strong: rgba(0, 50, 100, 0.12);
+  --surface-shadow: 0 4px 20px rgba(0, 50, 100, 0.06);
+
+  /* ── Orbs (decorative) ── */
+  --orb-primary: rgba(0, 102, 255, 0.06);
+  --orb-accent: rgba(0, 229, 255, 0.04);
+  --orb-violet: rgba(128, 0, 255, 0.04);
+
+  /* ── Overlay ── */
+  --overlay-bg: rgba(0, 20, 60, 0.25);
+  --overlay-backdrop: blur(5px);
+
+  /* ── Topbar ── */
+  --topbar-bg: rgba(255, 255, 255, 0.65);
+  --topbar-border: rgba(0, 50, 100, 0.1);
+  --topbar-btn-hover: rgba(0, 102, 255, 0.08);
+  --topbar-progress-track: rgba(0, 102, 255, 0.06);
+
+  /* ── Topbar Dropdown ── */
+  --dropdown-bg: rgba(255, 255, 255, 0.95);
+  --dropdown-border: rgba(0, 50, 100, 0.12);
+  --dropdown-shadow: 0 8px 32px rgba(0, 50, 100, 0.12), 0 2px 8px rgba(0, 50, 100, 0.06);
+  --dropdown-item-text: #3f4a60;
+  --dropdown-item-hover: rgba(0, 102, 255, 0.08);
+  --dropdown-divider: rgba(0, 50, 100, 0.08);
+
+  /* ── Sidebar ── */
+  --sidebar-bg: rgba(255, 255, 255, 0.6);
+  --sidebar-border: rgba(0, 50, 100, 0.1);
+  --sidebar-brand-border: rgba(0, 50, 100, 0.06);
+  --sidebar-logo-bg: linear-gradient(135deg, rgba(0, 102, 255, 0.12), rgba(0, 229, 255, 0.04));
+  --sidebar-logo-border: rgba(0, 50, 100, 0.15);
+  --sidebar-link-text: #6a7993;
+  --sidebar-link-hover-bg: rgba(0, 50, 100, 0.05);
+  --sidebar-link-hover-text: #1a222e;
+  --sidebar-link-active-bg: rgba(0, 102, 255, 0.08);
+  --sidebar-link-expanded-text: #1a222e;
+  --sidebar-submenu-border: rgba(0, 50, 100, 0.06);
+  --sidebar-footer-border: rgba(0, 50, 100, 0.06);
+
+  /* ── Avatar ── */
+  --avatar-bg: linear-gradient(135deg, rgba(0, 102, 255, 0.1), rgba(0, 229, 255, 0.04));
+  --avatar-border: rgba(0, 50, 100, 0.15);
+
+  /* ── Footer ── */
+  --footer-bg: rgba(255, 255, 255, 0.6);
+  --footer-border: var(--theme-glass-border);
+  --footer-shadow: 0 -2px 20px rgba(0, 50, 100, 0.05);
+  --footer-text: #6a7993;
+  --footer-meta: #8d9aaf;
+
+  /* ── Content Glass ── */
+  --content-glass-bg: rgba(255, 255, 255, 0.5);
+  --content-glass-border: var(--theme-glass-border);
+  --content-glass-shadow: var(--theme-glass-shadow);
+
+  /* ── Input / Textarea / Datepicker / Autocomplete ── */
+  --input-label: #4e5e78;
+  --input-bg: rgba(255, 255, 255);
+  --input-border: rgba(0, 50, 100, 0.15);
+  --input-border-hover: var(--color-primary-300);
+  --input-border-focus: var(--color-primary-500);
+  --input-text: #1a222e;
+  --input-placeholder: #b8c1d2;
+  --input-focus-shadow: 0 0 0 3px rgba(0, 102, 255, 0.12), 0 0 8px rgba(0, 102, 255, 0.08);
+  --input-disabled-bg: rgba(0, 50, 100, 0.03);
+  --input-disabled-text: #b8c1d2;
+  --input-disabled-border: rgba(0, 50, 100, 0.06);
+  --input-disabled-label: #b8c1d2;
+
+  /* ── Checkbox ── */
+  --checkbox-border: rgba(0, 50, 100, 0.2);
+  --checkbox-bg: rgba(0, 50, 100, 0.04);
+  --checkbox-hover-bg: rgba(0, 102, 255, 0.06);
+  --checkbox-hover-shadow: 0 0 0 3px rgba(0, 102, 255, 0.08);
+  --checkbox-label: #4e5e78;
+  --checkbox-label-hover: #1a222e;
+  --checkbox-disabled-label: #b8c1d2;
+  --checkbox-disabled-checked-bg: rgba(0, 102, 255, 0.3);
+
+  /* ── Button ── */
+  --btn-outline-bg: rgba(0, 50, 100, 0.04);
+
+  /* ── Toggle (theme switch) ── */
+  --toggle-track-bg: rgba(0, 50, 100, 0.1);
+  --toggle-track-border: rgba(0, 50, 100, 0.15);
+  --toggle-knob-bg: #ffffff;
+  --toggle-icon-color: #8d9aaf;
+
+  /* ── Autocomplete extras ── */
+  --autocomplete-toggle-color: #8d9aaf;
+  --autocomplete-toggle-hover-color: #1a222e;
+  --autocomplete-toggle-hover-bg: rgba(0, 50, 100, 0.06);
+  --autocomplete-chip-remove-color: rgba(255, 255, 255, 0.7);
+  --autocomplete-chip-remove-bg: rgba(255, 255, 255, 0.15);
+  --autocomplete-chip-remove-hover-bg: rgba(255, 255, 255, 0.3);
+  --autocomplete-disabled-chip-bg: rgba(0, 50, 100, 0.08);
+  --autocomplete-disabled-chip-text: #8d9aaf;
+
+  /* ── Skeleton loading ── */
+  --skeleton-from: rgba(0, 50, 100, 0.04);
+  --skeleton-mid: rgba(0, 50, 100, 0.08);
+  --skeleton-to: rgba(0, 50, 100, 0.04);
+
+  /* ── Dashboard ── */
+  --dash-title: #1a222e;
+  --dash-subtitle: #8d9aaf;
+  --dash-section-label: #8d9aaf;
+  --dash-module-bg: rgba(255, 255, 255, 0.6);
+  --dash-module-border: rgba(0, 50, 100, 0.08);
+  --dash-module-border-hover: rgba(0, 102, 255, 0.15);
+  --dash-module-shadow-hover:
+    0 12px 40px rgba(0, 50, 100, 0.1), 0 0 0 1px rgba(0, 102, 255, 0.08) inset;
+  --dash-module-label: #4e5e78;
+  --dash-module-label-hover: #1a222e;
+  --dash-tab-text: #8d9aaf;
+  --dash-tab-hover-text: #4e5e78;
+  --dash-tab-hover-bg: rgba(0, 50, 100, 0.03);
+  --dash-tab-border: rgba(0, 50, 100, 0.08);
+  --dash-tab-type-bg: rgba(0, 50, 100, 0.06);
+  --dash-tab-type-text: #8d9aaf;
+  --dash-future-bg: rgba(255, 255, 255, 0.5);
+  --dash-future-border: rgba(0, 50, 100, 0.1);
+  --dash-future-title: #6a7993;
+  --dash-future-desc: #8d9aaf;
+
+  /* ── My Account ── */
+  --account-header-border: rgba(0, 102, 255, 0.15);
+  --account-card-bg: rgba(255, 255, 255, 0.8);
+  --account-card-border: rgba(0, 50, 100, 0.1);
+  --account-card-shadow: 0 4px 20px rgba(0, 50, 100, 0.06);
+  --account-card-border-hover: rgba(0, 102, 255, 0.2);
+  --account-card-shadow-hover: 0 8px 32px rgba(0, 50, 100, 0.1), 0 0 15px rgba(0, 102, 255, 0.05);
+  --account-section-border: rgba(0, 50, 100, 0.08);
+  --account-actions-bg: rgba(0, 102, 255, 0.04);
+  --account-actions-border: rgba(0, 102, 255, 0.12);
+  --account-modal-overlay: rgba(0, 20, 60, 0.3);
+  --account-modal-bg: rgba(255, 255, 255, 0.97);
+  --account-modal-border: rgba(0, 50, 100, 0.12);
+  --account-modal-shadow: 0 20px 50px rgba(0, 50, 100, 0.15), 0 0 20px rgba(0, 102, 255, 0.05);
+  --account-modal-header-border: rgba(0, 50, 100, 0.08);
+
+  /* ── Login ── */
+  --login-bg: #f0f4f8;
+  --login-card-bg: rgba(255, 255, 255, 0.7);
+  --login-card-border: rgba(0, 50, 100, 0.1);
+  --login-card-shadow: 0 15px 35px rgba(0, 50, 100, 0.08), 0 5px 15px rgba(0, 50, 100, 0.04);
+
+  /* ── Vidas Sub-Route ── */
+  --subroute-header-border: rgba(0, 50, 100, 0.08);
+  --subroute-header-text: #1a222e;
+  --subroute-close-hover: #1a222e;
+
+  /* ── Splash Screen ── */
+  --splash-bg: #f0f4f8;
+  --splash-orb1: rgba(0, 102, 255, 0.08);
+  --splash-orb2: rgba(0, 229, 255, 0.06);
+  --splash-card-bg: rgba(255, 255, 255, 0.7);
+  --splash-card-border: rgba(0, 50, 100, 0.1);
+  --splash-card-inner-shadow: inset 0 0 20px rgba(0, 50, 100, 0.03);
+  --splash-card-outer-shadow: 0 10px 30px rgba(0, 50, 100, 0.08);
+  --splash-title: #1a222e;
+  --splash-subtitle: #8d9aaf;
+  --splash-loader-track: rgba(0, 50, 100, 0.08);
+}
+
+/* ── Smooth theme transition ── */
+html.dark,
+html.light {
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+}

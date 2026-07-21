@@ -1,0 +1,113 @@
+/* ====================================
+   HEALTH-UI Design System — Color Tokens
+   ==================================== */
+
+:root {
+  /* ── Primary (Electric Blue) ── */
+  --color-primary-50: #e6f0ff;
+  --color-primary-100: #cce0ff;
+  --color-primary-200: #99c2ff;
+  --color-primary-300: #66a3ff;
+  --color-primary-400: #3385ff;
+  --color-primary-500: #0066ff;
+  --color-primary-600: #005ce6;
+  --color-primary-700: #0047b3;
+  --color-primary-800: #003380;
+  --color-primary-900: #001f4d;
+
+  /* ── Secondary (Deep Violet) ── */
+  --color-secondary-50: #f2e6ff;
+  --color-secondary-100: #e6ccff;
+  --color-secondary-200: #cc99ff;
+  --color-secondary-300: #b366ff;
+  --color-secondary-400: #9933ff;
+  --color-secondary-500: #8000ff;
+  --color-secondary-600: #7300e6;
+  --color-secondary-700: #5900b3;
+  --color-secondary-800: #400080;
+  --color-secondary-900: #26004d;
+
+  /* ── Accent (Electric Cyan) ── */
+  --color-accent-50: #e0ffff;
+  --color-accent-100: #b3ffff;
+  --color-accent-200: #80ffff;
+  --color-accent-300: #4dffff;
+  --color-accent-400: #26ffff;
+  --color-accent-500: #00e5ff;
+  --color-accent-600: #00cccc;
+  --color-accent-700: #009999;
+  --color-accent-800: #006666;
+  --color-accent-900: #003333;
+
+  /* ── Neutral (Cool Glass Gray) ── */
+  --color-neutral-0: #ffffff;
+  --color-neutral-50: #f4f6fb;
+  --color-neutral-100: #eaedf4;
+  --color-neutral-200: #d6dbe6;
+  --color-neutral-300: #b8c1d2;
+  --color-neutral-400: #8d9aaf;
+  --color-neutral-500: #6a7993;
+  --color-neutral-600: #4e5e78;
+  --color-neutral-700: #3f4a60;
+  --color-neutral-800: #2a3445;
+  --color-neutral-900: #1a222e;
+
+  /* ── Semantic ── */
+  --color-success-light: #ccffee;
+  --color-success: #00e676;
+  --color-success-dark: #00a354;
+
+  --color-warning-light: #fff2cc;
+  --color-warning: #ffc107;
+  --color-warning-dark: #cc9900;
+
+  --color-danger-light: #ffcccc;
+  --color-danger: #ff3366;
+  --color-danger-dark: #cc0033;
+
+  --color-info-light: #cceeff;
+  --color-info: #00aaff;
+  --color-info-dark: #0077cc;
+
+  /* ── Surface & Background ── */
+  /* DARK-FIX: Map surface tokens to theme-aware variables */
+  --color-bg: var(--theme-bg, #f4f6fb);
+  --color-surface: var(--surface-bg, #ffffff);
+  --color-surface-raised: var(--surface-bg-raised, rgba(255, 255, 255, 0.85)); /* Glass surface */
+  --color-surface-overlay: rgba(26, 34, 46, 0.6);
+  --color-surface-card: var(--surface-bg, #ffffff);
+  --color-surface-hover: var(--surface-bg-hover, rgba(0, 50, 100, 0.04));
+  --color-surface-input: var(--input-bg, rgba(255, 255, 255));
+
+  /* DARK-FIX: Map input tokens to theme-aware variables */
+  --color-input-bg: var(--input-bg, rgba(255, 255, 255));
+  --color-input-border: var(--input-border, rgba(0, 50, 100, 0.15));
+
+  /* ── Glass & Glow (theme-aware via theme.css) ── */
+  --color-glass-border: var(--theme-glass-border, rgba(255, 255, 255, 0.5));
+  --color-glow: var(--theme-glow, rgba(0, 102, 255, 0.3));
+
+  /* ── Border ── */
+  --color-border: #d6dbe6;
+  --color-border-focus: var(--color-primary-500);
+
+  /* ── Text ── */
+  --color-text-primary: var(--theme-text, #1a222e);
+  --color-text-secondary: var(--theme-text-secondary, #6a7993);
+  --color-text-muted: var(--theme-text-muted, #8d9aaf);
+  --color-text-inverse: #ffffff;
+  --color-text-link: var(--color-primary-600);
+
+  /* ── Shadows ── */
+  --shadow-xs: 0 1px 2px rgba(26, 34, 46, 0.04);
+  --shadow-sm: 0 2px 4px rgba(26, 34, 46, 0.04), 0 1px 2px rgba(26, 34, 46, 0.03);
+  --shadow-md: 0 8px 16px rgba(26, 34, 46, 0.06), 0 4px 6px rgba(26, 34, 46, 0.04);
+  --shadow-lg: 0 16px 32px rgba(26, 34, 46, 0.08), 0 8px 12px rgba(26, 34, 46, 0.05);
+  --shadow-xl: 0 24px 48px rgba(26, 34, 46, 0.1), 0 12px 16px rgba(26, 34, 46, 0.06);
+  --shadow-glow: var(
+    --theme-glow-shadow,
+    0 0 15px rgba(0, 102, 255, 0.3),
+    0 0 30px rgba(0, 102, 255, 0.15)
+  );
+  --shadow-glass: var(--theme-glass-shadow, 0 8px 32px rgba(0, 102, 255, 0.05));
+}

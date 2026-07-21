@@ -6,26 +6,26 @@ pickers, listas, árvores, dialogs, toasts, search genérica e editor HTML
 sem dependências de UI de terceiros (Material, PrimeNG, etc.).
 
 > **Escopo:** `@detrasoft.com/detra-ng`
-> **Versão atual:** `0.3.0` — Angular 17 / 18 / 19 / 20 (peer-deps).
+> **Versão atual:** `0.4.0` — Angular 17 / 18 / 19 / 20 (peer-deps).
 
 ---
 
 ## ✨ O que vem na caixa
 
-| Categoria | Componentes / APIs |
-|---|---|
-| Primitivos | `BadgeComponent`, `ButtonComponent` |
-| Form controls (CVA) | `InputComponent`, `TextareaComponent`, `CheckboxComponent` |
-| Layout | `TabbarComponent`, `TabComponent` |
-| Pickers | `DatepickerComponent` (locale pt-BR / en) |
-| Dropdowns | `DropdownComponent`, `AutocompleteComponent` |
-| Dialogs | `DialogComponent`, `ConfirmDialogComponent` |
-| Toast | `ToastComponent`, `ToastService` |
-| Search | `SearchComponent`, `SearchModalComponent`, `provideHttpDetraSearchAdapter`, `DETRA_SEARCH_ADAPTER` token |
-| Lists | `ListComponent`, `ListColumnDirective` |
-| Trees | `TreeComponent` |
-| Errors | `ErrorPanelComponent` |
-| Editor | `HtmlEditorComponent` |
+| Categoria           | Componentes / APIs                                                                                       |
+| ------------------- | -------------------------------------------------------------------------------------------------------- |
+| Primitivos          | `BadgeComponent`, `ButtonComponent`                                                                      |
+| Form controls (CVA) | `InputComponent`, `TextareaComponent`, `CheckboxComponent`                                               |
+| Layout              | `TabbarComponent`, `TabComponent`                                                                        |
+| Pickers             | `DatepickerComponent` (locale pt-BR / en)                                                                |
+| Dropdowns           | `DropdownComponent`, `AutocompleteComponent`                                                             |
+| Dialogs             | `DialogComponent`, `ConfirmDialogComponent`                                                              |
+| Toast               | `ToastComponent`, `ToastService`                                                                         |
+| Search              | `SearchComponent`, `SearchModalComponent`, `provideHttpDetraSearchAdapter`, `DETRA_SEARCH_ADAPTER` token |
+| Lists               | `ListComponent`, `ListColumnDirective`                                                                   |
+| Trees               | `TreeComponent`                                                                                          |
+| Errors              | `ErrorPanelComponent`                                                                                    |
+| Editor              | `HtmlEditorComponent`                                                                                    |
 
 Todos os componentes são **standalone** (sem `NgModule`) e com
 `ChangeDetectionStrategy.OnPush`.
@@ -51,11 +51,11 @@ Dependências de peer já vêm com qualquer app Angular padrão:
 ## 🚀 Uso rápido
 
 ```ts
-import { Component, signal } from '@angular/core';
-import { ButtonComponent, InputComponent, ToastService } from '@detrasoft.com/detra-ng';
+import { Component, signal } from "@angular/core";
+import { ButtonComponent, InputComponent, ToastService } from "@detrasoft.com/detra-ng";
 
 @Component({
-  selector: 'app-demo',
+  selector: "app-demo",
   standalone: true,
   imports: [ButtonComponent, InputComponent],
   template: `
@@ -64,10 +64,10 @@ import { ButtonComponent, InputComponent, ToastService } from '@detrasoft.com/de
   `,
 })
 export class DemoComponent {
-  email = signal('');
+  email = signal("");
   constructor(private toast: ToastService) {}
   send() {
-    this.toast.success('Enviado com sucesso!');
+    this.toast.success("Enviado com sucesso!");
   }
 }
 ```
@@ -75,13 +75,13 @@ export class DemoComponent {
 ### Search genérica (HTTP)
 
 ```ts
-import { ApplicationConfig } from '@angular/core';
-import { provideHttpDetraSearchAdapter } from '@detrasoft.com/detra-ng';
+import { ApplicationConfig } from "@angular/core";
+import { provideHttpDetraSearchAdapter } from "@detrasoft.com/detra-ng";
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideHttpDetraSearchAdapter({
-      endpoint: '/api/search',
+      endpoint: "/api/search",
       debounceMs: 300,
     }),
   ],
@@ -93,7 +93,7 @@ export const appConfig: ApplicationConfig = {
 Importe `ToastHostComponent` no componente raiz:
 
 ```ts
-import { ToastHostComponent } from '@detrasoft.com/detra-ng';
+import { ToastHostComponent } from "@detrasoft.com/detra-ng";
 
 @Component({
   standalone: true,

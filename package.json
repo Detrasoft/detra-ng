@@ -1,6 +1,6 @@
 {
   "name": "@detrasoft.com/detra-ng",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "description": "DetraSoft Angular Design System — standalone components com CSS puro para Angular 17-20",
   "keywords": [
     "angular",
@@ -78,6 +78,10 @@
       "types": "./dist/detra-ng/index.d.ts",
       "default": "./dist/detra-ng/fesm2022/detrasoft.com-detra-ng.mjs"
     },
+    "./base/*": "./dist/detra-ng/base/*",
+    "./dist/detra-ng/base/*": "./dist/detra-ng/base/*",
+    "./tokens/*": "./dist/detra-ng/tokens/*",
+    "./dist/detra-ng/tokens/*": "./dist/detra-ng/tokens/*",
     "./package.json": "./package.json"
   },
   "publishConfig": {

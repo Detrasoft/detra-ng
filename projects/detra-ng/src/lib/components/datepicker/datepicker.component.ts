@@ -4,6 +4,7 @@ import {
   Component,
   ElementRef,
   forwardRef,
+  HostBinding,
   HostListener,
   inject,
   Input,
@@ -131,6 +132,7 @@ export const DATEPICKER_LOCALE_EN: DatepickerLocale = {
       class="ds-datepicker-wrapper"
       [class.ds-datepicker--error]="error"
       [class.ds-datepicker--disabled]="disabled"
+      [class.ds-datepicker--open]="isOpen"
     >
       <!-- Label -->
       <label *ngIf="label" class="ds-datepicker__label" [attr.for]="inputId">
@@ -299,6 +301,11 @@ export class DatepickerComponent implements ControlValueAccessor, OnInit {
   viewMonth = new Date().getMonth();
   viewYear = new Date().getFullYear();
   isOpen = false;
+
+  @HostBinding('class.ds-datepicker--open') get isOpenClass(): boolean {
+    return this.isOpen;
+  }
+
   calendarDays: CalendarDay[] = [];
   displayValue = '';
 

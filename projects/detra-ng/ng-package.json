@@ -5,6 +5,10 @@
   "lib": {
     "entryFile": "src/public-api.ts"
   },
+  "assets": [
+    "base",
+    "tokens"
+  ],
   "allowedNonPeerDependencies": [
     "tslib"
   ]
