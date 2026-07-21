@@ -1,6 +1,6 @@
 {
   "name": "@detrasoft.com/detra-ng",
-  "version": "0.5.0",
+  "version": "0.6.1",
   "description": "DetraSoft Angular standalone components (forms, pickers, dialogs, toasts, search).",
   "sideEffects": false,
   "peerDependencies": {

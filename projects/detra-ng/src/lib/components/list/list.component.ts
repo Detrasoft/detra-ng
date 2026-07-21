@@ -1,51 +1,27 @@
 import {
-  AfterViewInit,
-  ChangeDetectionStrategy,
-  ChangeDetectorRef,
   Component,
-  ContentChild,
-  ContentChildren,
-  ElementRef,
-  EventEmitter,
-  inject,
+  ChangeDetectionStrategy,
   Input,
-  NgZone,
-  OnChanges,
-  OnDestroy,
   Output,
+  EventEmitter,
+  ContentChildren,
+  ContentChild,
   QueryList,
-  SimpleChanges,
   TemplateRef,
+  OnChanges,
+  SimpleChanges,
+  ElementRef,
   ViewChild,
+  AfterViewInit,
+  OnDestroy,
+  NgZone,
+  inject,
+  ChangeDetectorRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Subscription } from 'rxjs';
 import { ListColumnDirective } from './list-column.directive';
 
-/**
- * Generic list component that renders data as a table (desktop)
- * or as cards (mobile), with built-in pagination and infinite scroll.
- *
- * Usage:
- * ```html
- * <ds-list [data]="items" [pageSize]="10" trackByKey="id">
- *   <ds-list-column key="nome" label="Nome">
- *     <ng-template let-value>
- *       <strong>{{ value }}</strong>
- *     </ng-template>
- *   </ds-list-column>
- *   <ds-list-column key="email" label="Email" />
- *
- *   <ng-template #actionsTemplate let-row>
- *     <a [routerLink]="[row.id]">Editar</a>
- *   </ng-template>
- *
- *   <!-- Optional: fully custom card template -->
- *   <ng-template #cardTemplate let-row>
- *     <div>{{ row.nome }}</div>
- *   </ng-template>
- * </ds-list>
- * ```
- */
 @Component({
   selector: 'ds-list',
   standalone: true,
@@ -80,6 +56,14 @@ import { ListColumnDirective } from './list-column.directive';
                   </ng-template>
                 </span>
               </div>
+              <div
+                *ngIf="resizableColumns"
+                class="ds-list__col-resizer"
+                (mousedown)="onColumnResizeStart($event, col)"
+                (touchstart)="onColumnResizeStart($event, col)"
+                (click)="$event.stopPropagation()"
+                title="Redimensionar coluna"
+              ></div>
             </th>
             <th *ngIf="actionsTemplate" class="ds-list__actions-th">
               {{ actionsLabel }}
@@ -161,21 +145,21 @@ import { ListColumnDirective } from './list-column.directive';
                 </div>
               </td>
             </tr>
-          </ng-template>
 
-          <!-- Empty state -->
-          <tr *ngIf="paginatedData.length === 0">
-            <td [attr.colspan]="columnCount" class="ds-list__empty">
-              {{ emptyMessage }}
-            </td>
-          </tr>
+            <!-- Empty state -->
+            <tr *ngIf="data.length === 0">
+              <td [attr.colspan]="columnCount" class="ds-list__empty">
+                {{ emptyMessage }}
+              </td>
+            </tr>
+          </ng-template>
         </tbody>
       </table>
 
-      <!-- Pagination controls -->
-      <div class="ds-list__pagination" *ngIf="totalPages > 1">
+      <!-- Desktop Pagination -->
+      <div *ngIf="totalPages > 1" class="ds-list__pagination">
         <span class="ds-list__pagination-info">
-          {{ paginationStart }}–{{ paginationEnd }} de
+          Exibindo {{ paginationStart }}–{{ paginationEnd }} de
           {{ serverPagination ? totalRecords : data.length }}
         </span>
 
@@ -235,59 +219,138 @@ import { ListColumnDirective } from './list-column.directive';
          MOBILE CARD VIEW + INFINITE SCROLL
          ═══════════════════════════════════════════ -->
     <div class="ds-list__card-container" data-testid="ds-list-cards">
-      <div
-        *ngFor="let row of mobileData; trackBy: _trackByFn"
-        class="ds-list__card"
-        (click)="onRowClick($event, row)"
-        [class.ds-list__row--clickable]="hasRowClick"
-      >
-        <!-- Custom card template -->
-        <ng-container *ngIf="cardTemplate; else defaultCardTpl">
-          <ng-container
-            *ngTemplateOutlet="cardTemplate; context: { $implicit: row }"
-          ></ng-container>
-        </ng-container>
-
-        <!-- Default card layout (auto-generated from columns) -->
-        <ng-template #defaultCardTpl>
-          <div class="ds-list__card-header" *ngIf="firstColumn">
-            <span class="ds-list__card-title">
-              <ng-container *ngIf="firstColumn.cellTemplate; else defaultTitleCell">
-                <ng-container
-                  *ngTemplateOutlet="
-                    firstColumn.cellTemplate;
-                    context: { $implicit: resolveValue(row, firstColumn.key), row: row }
-                  "
-                ></ng-container>
-              </ng-container>
-              <ng-template #defaultTitleCell>{{ resolveValue(row, firstColumn.key) }}</ng-template>
-            </span>
+      <!-- ── Grouped Mobile View ── -->
+      <ng-container *ngIf="groupBy; else flatMobileCards">
+        <ng-container *ngFor="let group of mobileGroupedData">
+          <div class="ds-list__mobile-group-header">
+            <ng-container *ngIf="groupHeaderTemplate; else defaultMobileGroupHeader">
+              <ng-container
+                *ngTemplateOutlet="
+                  groupHeaderTemplate;
+                  context: { $implicit: group.key, groupKey: group.key, items: group.items }
+                "
+              ></ng-container>
+            </ng-container>
+            <ng-template #defaultMobileGroupHeader>
+              <div class="ds-list__group-header">
+                <strong>{{ group.key }}</strong>
+                <span class="ds-list__group-count">({{ group.items.length }})</span>
+              </div>
+            </ng-template>
           </div>
 
-          <div class="ds-list__card-body" *ngIf="restColumns.length > 0">
-            <div *ngFor="let col of restColumns" class="ds-list__card-field">
-              <span class="ds-list__card-label">{{ col.label }}</span>
-              <span class="ds-list__card-value">
-                <ng-container *ngIf="col.cellTemplate; else defaultFieldCell">
+          <div
+            *ngFor="let row of group.items; trackBy: _trackByFn"
+            class="ds-list__card"
+            (click)="onRowClick($event, row)"
+            [class.ds-list__row--clickable]="hasRowClick"
+          >
+            <!-- Custom card template -->
+            <ng-container *ngIf="cardTemplate; else defaultCardTpl">
+              <ng-container
+                *ngTemplateOutlet="cardTemplate; context: { $implicit: row }"
+              ></ng-container>
+            </ng-container>
+
+            <!-- Default card layout (auto-generated from columns) -->
+            <ng-template #defaultCardTpl>
+              <div class="ds-list__card-header" *ngIf="firstColumn">
+                <span class="ds-list__card-title">
+                  <ng-container *ngIf="firstColumn.cellTemplate; else defaultTitleCell">
+                    <ng-container
+                      *ngTemplateOutlet="
+                        firstColumn.cellTemplate;
+                        context: { $implicit: resolveValue(row, firstColumn.key), row: row }
+                      "
+                    ></ng-container>
+                  </ng-container>
+                  <ng-template #defaultTitleCell>{{ resolveValue(row, firstColumn.key) }}</ng-template>
+                </span>
+              </div>
+
+              <div class="ds-list__card-body" *ngIf="restColumns.length > 0">
+                <div *ngFor="let col of restColumns" class="ds-list__card-field">
+                  <span class="ds-list__card-label">{{ col.label }}</span>
+                  <span class="ds-list__card-value">
+                    <ng-container *ngIf="col.cellTemplate; else defaultFieldCell">
+                      <ng-container
+                        *ngTemplateOutlet="
+                          col.cellTemplate;
+                          context: { $implicit: resolveValue(row, col.key), row: row }
+                        "
+                      ></ng-container>
+                    </ng-container>
+                    <ng-template #defaultFieldCell>{{ resolveValue(row, col.key) }}</ng-template>
+                  </span>
+                </div>
+              </div>
+
+              <div *ngIf="actionsTemplate" class="ds-list__card-actions">
+                <ng-container
+                  *ngTemplateOutlet="actionsTemplate; context: { $implicit: row }"
+                ></ng-container>
+              </div>
+            </ng-template>
+          </div>
+        </ng-container>
+      </ng-container>
+
+      <!-- ── Flat Mobile View ── -->
+      <ng-template #flatMobileCards>
+        <div
+          *ngFor="let row of mobileData; trackBy: _trackByFn"
+          class="ds-list__card"
+          (click)="onRowClick($event, row)"
+          [class.ds-list__row--clickable]="hasRowClick"
+        >
+          <!-- Custom card template -->
+          <ng-container *ngIf="cardTemplate; else defaultFlatCardTpl">
+            <ng-container
+              *ngTemplateOutlet="cardTemplate; context: { $implicit: row }"
+            ></ng-container>
+          </ng-container>
+
+          <!-- Default card layout -->
+          <ng-template #defaultFlatCardTpl>
+            <div class="ds-list__card-header" *ngIf="firstColumn">
+              <span class="ds-list__card-title">
+                <ng-container *ngIf="firstColumn.cellTemplate; else defaultTitleCellFlat">
                   <ng-container
                     *ngTemplateOutlet="
-                      col.cellTemplate;
-                      context: { $implicit: resolveValue(row, col.key), row: row }
+                      firstColumn.cellTemplate;
+                      context: { $implicit: resolveValue(row, firstColumn.key), row: row }
                     "
                   ></ng-container>
                 </ng-container>
-                <ng-template #defaultFieldCell>{{ resolveValue(row, col.key) }}</ng-template>
+                <ng-template #defaultTitleCellFlat>{{ resolveValue(row, firstColumn.key) }}</ng-template>
               </span>
             </div>
-          </div>
 
-          <div *ngIf="actionsTemplate" class="ds-list__card-actions">
-            <ng-container
-              *ngTemplateOutlet="actionsTemplate; context: { $implicit: row }"
-            ></ng-container>
-          </div>
-        </ng-template>
-      </div>
+            <div class="ds-list__card-body" *ngIf="restColumns.length > 0">
+              <div *ngFor="let col of restColumns" class="ds-list__card-field">
+                <span class="ds-list__card-label">{{ col.label }}</span>
+                <span class="ds-list__card-value">
+                  <ng-container *ngIf="col.cellTemplate; else defaultFieldCellFlat">
+                    <ng-container
+                      *ngTemplateOutlet="
+                        col.cellTemplate;
+                        context: { $implicit: resolveValue(row, col.key), row: row }
+                      "
+                    ></ng-container>
+                  </ng-container>
+                  <ng-template #defaultFieldCellFlat>{{ resolveValue(row, col.key) }}</ng-template>
+                </span>
+              </div>
+            </div>
+
+            <div *ngIf="actionsTemplate" class="ds-list__card-actions">
+              <ng-container
+                *ngTemplateOutlet="actionsTemplate; context: { $implicit: row }"
+              ></ng-container>
+            </div>
+          </ng-template>
+        </div>
+      </ng-template>
 
       <!-- Infinite scroll sentinel -->
       <div #scrollSentinel class="ds-list__sentinel" *ngIf="hasMoreMobileData">
@@ -331,6 +394,10 @@ export class ListComponent implements OnChanges, AfterViewInit, OnDestroy {
   @Input() serverPagination = false;
   @Input() totalRecords?: number;
 
+  // Resizable columns & localStorage inputs
+  @Input() listId?: string;
+  @Input() resizableColumns = true;
+
   // Grouping & Sorting Inputs
   @Input() groupBy?: string;
   @Input() sortKey?: string;
@@ -351,7 +418,6 @@ export class ListComponent implements OnChanges, AfterViewInit, OnDestroy {
     groupKey: string;
     items: any[];
   }>;
-
 
   // ── Pagination state ──
   currentPage = 1;
@@ -374,9 +440,6 @@ export class ListComponent implements OnChanges, AfterViewInit, OnDestroy {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['data']) {
-      // If we are using client-side pagination, reset to page 1.
-      // For server-side pagination, do not reset currentPage because the new data
-      // is usually the result of a page change.
       if (!this.serverPagination) {
         this.currentPage = 1;
       }
@@ -384,11 +447,19 @@ export class ListComponent implements OnChanges, AfterViewInit, OnDestroy {
     }
   }
 
+  private columnsSub?: Subscription;
+
   ngAfterViewInit(): void {
-    // Observer setup is handled by the ViewChild setter
+    setTimeout(() => this.restoreColumnWidths(), 0);
+    if (this.columns) {
+      this.columnsSub = this.columns.changes.subscribe(() => {
+        setTimeout(() => this.restoreColumnWidths(), 0);
+      });
+    }
   }
 
   ngOnDestroy(): void {
+    this.columnsSub?.unsubscribe();
     this.disconnectObserver();
   }
 
@@ -402,7 +473,7 @@ export class ListComponent implements OnChanges, AfterViewInit, OnDestroy {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   get paginatedData(): any[] {
     if (this.serverPagination) {
-      return this.data; // Server has already sliced the data
+      return this.data;
     }
     const start = (this.currentPage - 1) * this.pageSize;
     return this.data.slice(start, start + this.pageSize);
@@ -443,6 +514,58 @@ export class ListComponent implements OnChanges, AfterViewInit, OnDestroy {
     return Array.from(groupsMap.entries()).map(([key, items]) => ({ key, items }));
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get mobileGroupedData(): { key: string; items: any[] }[] {
+    if (!this.groupBy) return [];
+    const groupsMap = new Map<string, any[]>();
+    const rows = this.mobileData;
+    for (const row of rows) {
+      const resolved = this.resolveValue(row, this.groupBy);
+      const groupVal = resolved != null && resolved !== '' ? String(resolved) : 'Sem grupo';
+      if (!groupsMap.has(groupVal)) {
+        groupsMap.set(groupVal, []);
+      }
+      groupsMap.get(groupVal)!.push(row);
+    }
+    return Array.from(groupsMap.entries()).map(([key, items]) => ({ key, items }));
+  }
+
+  get columnCount(): number {
+    let count = this.columns ? this.columns.length : 0;
+    if (this.actionsTemplate) count++;
+    return count;
+  }
+
+  get firstColumn(): ListColumnDirective | undefined {
+    return this.columns?.first;
+  }
+
+  get restColumns(): ListColumnDirective[] {
+    if (!this.columns) return [];
+    return this.columns.toArray().slice(1);
+  }
+
+  get visiblePages(): number[] {
+    const total = this.totalPages;
+    const current = this.currentPage;
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    const pages: number[] = [1];
+    if (current > 3) pages.push(-1);
+    const start = Math.max(2, current - 1);
+    const end = Math.min(total - 1, current + 1);
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    if (current < total - 2) pages.push(-1);
+    pages.push(total);
+    return pages;
+  }
+
+  get hasRowClick(): boolean {
+    return this.rowClick.observed;
+  }
 
   get paginationStart(): number {
     const total = this.serverPagination ? this.totalRecords || 0 : this.data.length;
@@ -458,8 +581,6 @@ export class ListComponent implements OnChanges, AfterViewInit, OnDestroy {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   get mobileData(): any[] {
     if (this.serverPagination) {
-      // For infinite scroll with server pagination, mobile loaded count should track
-      // items across multiple requests, but for now we just show what we have
       return this.data;
     }
     return this.data.slice(0, this.mobileLoadedCount);
@@ -472,83 +593,85 @@ export class ListComponent implements OnChanges, AfterViewInit, OnDestroy {
     return this.mobileLoadedCount < this.data.length;
   }
 
-  get columnCount(): number {
-    const cols = this.columns ? this.columns.length : 0;
-    return cols + (this.actionsTemplate ? 1 : 0);
+  // ── Column Resize & localStorage ──
+
+  onColumnResizeStart(event: MouseEvent | TouchEvent, col: ListColumnDirective): void {
+    event.stopPropagation();
+    event.preventDefault();
+
+    const clientX = 'touches' in event ? event.touches[0].clientX : event.clientX;
+    const th = (event.target as HTMLElement).closest('th');
+    const startWidth = th ? th.getBoundingClientRect().width : 100;
+
+    this.ngZone.runOutsideAngular(() => {
+      const onMove = (moveEvt: MouseEvent | TouchEvent) => {
+        const currentX = 'touches' in moveEvt ? moveEvt.touches[0].clientX : moveEvt.clientX;
+        const deltaX = currentX - clientX;
+        const newWidth = Math.max(50, Math.round(startWidth + deltaX));
+        col.width = `${newWidth}px`;
+        this.cdr.markForCheck();
+      };
+
+      const onEnd = () => {
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onEnd);
+        window.removeEventListener('touchmove', onMove);
+        window.removeEventListener('touchend', onEnd);
+        this.saveColumnWidths();
+      };
+
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onEnd);
+      window.addEventListener('touchmove', onMove);
+      window.addEventListener('touchend', onEnd);
+    });
   }
 
-  get firstColumn(): ListColumnDirective | undefined {
-    return this.columns?.first;
+  private saveColumnWidths(): void {
+    if (!this.columns) return;
+    const storageKey = `ds-list-col-widths-${this.listId || 'default'}`;
+    const widths: Record<string, string> = {};
+    for (const col of this.columns.toArray()) {
+      if (col.key && col.width) {
+        widths[col.key] = col.width;
+      }
+    }
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(widths));
+    } catch {
+      // Ignora erro se localStorage estiver inacessível
+    }
   }
 
-  get restColumns(): ListColumnDirective[] {
-    return this.columns ? this.columns.toArray().slice(1) : [];
+  private restoreColumnWidths(): void {
+    if (!this.columns || this.columns.length === 0) return;
+    const storageKey = `ds-list-col-widths-${this.listId || 'default'}`;
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (!saved) return;
+      const widths = JSON.parse(saved) as Record<string, string>;
+      for (const col of this.columns.toArray()) {
+        if (col.key && widths[col.key]) {
+          col.width = widths[col.key];
+        }
+      }
+      this.cdr.markForCheck();
+      this.cdr.detectChanges();
+    } catch {
+      // Ignora erro se json/localStorage falhar
+    }
   }
 
-  get visiblePages(): number[] {
-    const total = this.totalPages;
-    if (total <= 7) {
-      return Array.from({ length: total }, (_, i) => i + 1);
-    }
+  // ── Actions ──
 
-    const pages: number[] = [1];
-
-    if (this.currentPage > 3) {
-      pages.push(-1); // ellipsis marker
-    }
-
-    const start = Math.max(2, this.currentPage - 1);
-    const end = Math.min(total - 1, this.currentPage + 1);
-
-    for (let i = start; i <= end; i++) {
-      pages.push(i);
-    }
-
-    if (this.currentPage < total - 2) {
-      pages.push(-1); // ellipsis marker
-    }
-
-    pages.push(total);
-    return pages;
-  }
-
-  // ── Methods ──
-
-  get hasRowClick(): boolean {
-    return (
-      this.rowClick.observed ||
-      (this.rowClick.observers && this.rowClick.observers.length > 0) ||
-      false
-    );
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onRowClick(event: Event, row: any): void {
-    const target = event.target as HTMLElement;
-
-    // Prevent triggering if clicked inside an action column, a button, or an anchor/interactive element
-    if (
-      target.closest('.ds-list__actions-td') ||
-      target.closest('.ds-list__actions-wrapper') ||
-      target.closest('.ds-list__card-actions') ||
-      target.closest('button') ||
-      target.closest('a') ||
-      target.closest('input') ||
-      target.closest('select') ||
-      target.closest('ds-button') ||
-      target.closest('ds-search-modal') ||
-      target.closest('app-task-timesheet-control')
-    ) {
-      return;
-    }
-
-    if (this.hasRowClick) {
-      this.rowClick.emit(row);
-    }
+  goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages || page === this.currentPage) return;
+    this.currentPage = page;
+    this.pageChange.emit(page);
   }
 
   toggleSort(col: ListColumnDirective): void {
-    if (!col || !col.sortable) return;
+    if (!col.sortable || !col.key) return;
     if (this.sortKey === col.key) {
       this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
     } else {
@@ -559,41 +682,42 @@ export class ListComponent implements OnChanges, AfterViewInit, OnDestroy {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onRowClick(event: MouseEvent, row: any): void {
+    const target = event.target as HTMLElement;
+    if (target.closest('button, a, input, select, textarea, [role="button"], .row-actions, app-task-timesheet-control')) {
+      return;
+    }
+    this.rowClick.emit(row);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   resolveValue(row: any, key: string): any {
-    if (!row || !key) return '';
+    if (!row || !key) return undefined;
     if (key.includes('.')) {
-      return key.split('.').reduce((acc, part) => (acc != null ? acc[part] : undefined), row);
+      return key.split('.').reduce((acc, part) => acc && acc[part], row);
     }
     return row[key];
   }
 
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  _trackByFn = (_index: number, item: any): any => {
-    return this.trackByKey ? item[this.trackByKey] : _index;
-  };
-
-  goToPage(page: number): void {
-    if (page < 1 || page > this.totalPages) return;
-    this.currentPage = page;
-    if (this.serverPagination) {
-      this.pageChange.emit(this.currentPage);
-    }
+  _trackByFn(_: number, item: any): any {
+    return item ? item[this.trackByKey] ?? item : _;
   }
 
-  // ── Infinite Scroll (IntersectionObserver) ──
+  // ── Intersection Observer for Infinite Scroll ──
 
-  private setupObserver(element: HTMLElement): void {
+  private setupObserver(sentinelEl: HTMLElement): void {
     this.disconnectObserver();
     this.observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting && !this.isLoadingMore) {
-          this.ngZone.run(() => this.loadMore());
+        const entry = entries[0];
+        if (entry.isIntersecting && !this.isLoadingMore && this.hasMoreMobileData) {
+          this.loadMoreMobile();
         }
       },
-      { threshold: 0.1, rootMargin: '200px' },
+      { rootMargin: '100px' }
     );
-    this.observer.observe(element);
+    this.observer.observe(sentinelEl);
   }
 
   private disconnectObserver(): void {
@@ -603,15 +727,9 @@ export class ListComponent implements OnChanges, AfterViewInit, OnDestroy {
     }
   }
 
-  private loadMore(): void {
+  private loadMoreMobile(): void {
     this.isLoadingMore = true;
-    this.mobileLoadedCount = Math.min(this.mobileLoadedCount + this.pageSize, this.data.length);
-    // The IntersectionObserver callback runs outside the template event flow,
-    // so under OnPush we must explicitly mark the view to render the new rows.
-    this.cdr.markForCheck();
-    // Prevent rapid re-triggering while DOM updates
-    setTimeout(() => {
-      this.isLoadingMore = false;
-    }, 300);
+    this.mobileLoadedCount += this.pageSize;
+    this.isLoadingMore = false;
   }
 }
