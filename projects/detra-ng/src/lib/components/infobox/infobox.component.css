@@ -1,0 +1,155 @@
+.ds-infobox {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  background: var(--ds-infobox-bg, rgba(137, 111, 244, 0.08));
+  border: 1px solid var(--ds-infobox-border, rgba(137, 111, 244, 0.2));
+  border-radius: 20px;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.8rem;
+  color: var(--ds-infobox-color, #5c46b6);
+  cursor: pointer;
+  user-select: none;
+  width: auto;
+  align-self: flex-start;
+  transition: all 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+.ds-infobox:hover {
+  background: var(--ds-infobox-hover-bg, rgba(137, 111, 244, 0.15));
+  border-color: var(--ds-infobox-hover-border, #896ff4);
+  transform: translateY(-1px);
+}
+
+.ds-infobox__icon {
+  font-size: 0.95rem;
+  flex-shrink: 0;
+  color: var(--ds-infobox-icon-color, #896ff4);
+}
+
+.ds-infobox__collapsed {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 600;
+}
+
+.ds-infobox__chevron {
+  font-size: 0.65rem;
+  transition: transform 200ms ease;
+}
+
+/* Estado Expandido - Transforma de pílula para caixa completa */
+.ds-infobox--expanded {
+  width: 100%;
+  align-self: stretch;
+  border-radius: 10px;
+  background: var(--ds-infobox-expanded-bg, rgba(137, 111, 244, 0.12));
+  border-color: var(--ds-infobox-expanded-border, #896ff4);
+  padding: 0.65rem 0.95rem;
+  box-shadow: 0 3px 12px rgba(137, 111, 244, 0.12);
+}
+
+.ds-infobox--expanded .ds-infobox__icon {
+  margin-top: 2px;
+  align-self: flex-start;
+}
+
+.ds-infobox__content {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  font-size: 0.835rem;
+  color: var(--ds-infobox-text-color, #1f1840);
+  line-height: 1.4;
+  animation: dsInfoboxFadeIn 220ms ease-out forwards;
+}
+
+.ds-infobox__close {
+  font-size: 0.85rem;
+  color: #7a70a8;
+  padding: 0.2rem;
+  border-radius: 4px;
+  transition: all 150ms ease;
+}
+
+.ds-infobox__close:hover {
+  color: #5c46b6;
+  background: rgba(137, 111, 244, 0.2);
+}
+
+/* Quando não é recolhível (collapsible === false) */
+.ds-infobox--static {
+  cursor: default;
+  transform: none !important;
+}
+
+/* Cores Temáticas */
+.ds-infobox--primary {
+  --ds-infobox-bg: rgba(137, 111, 244, 0.08);
+  --ds-infobox-border: rgba(137, 111, 244, 0.2);
+  --ds-infobox-hover-bg: rgba(137, 111, 244, 0.15);
+  --ds-infobox-hover-border: #896ff4;
+  --ds-infobox-color: #5c46b6;
+  --ds-infobox-icon-color: #896ff4;
+  --ds-infobox-expanded-bg: rgba(137, 111, 244, 0.12);
+  --ds-infobox-expanded-border: #896ff4;
+}
+
+.ds-infobox--info {
+  --ds-infobox-bg: rgba(14, 165, 233, 0.08);
+  --ds-infobox-border: rgba(14, 165, 233, 0.2);
+  --ds-infobox-hover-bg: rgba(14, 165, 233, 0.15);
+  --ds-infobox-hover-border: #0ea5e9;
+  --ds-infobox-color: #0369a1;
+  --ds-infobox-icon-color: #0ea5e9;
+  --ds-infobox-expanded-bg: rgba(14, 165, 233, 0.12);
+  --ds-infobox-expanded-border: #0ea5e9;
+}
+
+.ds-infobox--success {
+  --ds-infobox-bg: rgba(16, 185, 129, 0.08);
+  --ds-infobox-border: rgba(16, 185, 129, 0.2);
+  --ds-infobox-hover-bg: rgba(16, 185, 129, 0.15);
+  --ds-infobox-hover-border: #10b981;
+  --ds-infobox-color: #047857;
+  --ds-infobox-icon-color: #10b981;
+  --ds-infobox-expanded-bg: rgba(16, 185, 129, 0.12);
+  --ds-infobox-expanded-border: #10b981;
+}
+
+.ds-infobox--warning {
+  --ds-infobox-bg: rgba(245, 158, 11, 0.08);
+  --ds-infobox-border: rgba(245, 158, 11, 0.2);
+  --ds-infobox-hover-bg: rgba(245, 158, 11, 0.15);
+  --ds-infobox-hover-border: #f59e0b;
+  --ds-infobox-color: #b45309;
+  --ds-infobox-icon-color: #f59e0b;
+  --ds-infobox-expanded-bg: rgba(245, 158, 11, 0.12);
+  --ds-infobox-expanded-border: #f59e0b;
+}
+
+.ds-infobox--danger {
+  --ds-infobox-bg: rgba(239, 68, 68, 0.08);
+  --ds-infobox-border: rgba(239, 68, 68, 0.2);
+  --ds-infobox-hover-bg: rgba(239, 68, 68, 0.15);
+  --ds-infobox-hover-border: #ef4444;
+  --ds-infobox-color: #b91c1c;
+  --ds-infobox-icon-color: #ef4444;
+  --ds-infobox-expanded-bg: rgba(239, 68, 68, 0.12);
+  --ds-infobox-expanded-border: #ef4444;
+}
+
+@keyframes dsInfoboxFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}

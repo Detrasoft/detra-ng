@@ -1,0 +1,32 @@
+<div
+  class="ds-infobox"
+  [class.ds-infobox--expanded]="isExpanded()"
+  [class.ds-infobox--static]="!collapsible"
+  [class.ds-infobox--primary]="color === 'primary'"
+  [class.ds-infobox--info]="color === 'info'"
+  [class.ds-infobox--success]="color === 'success'"
+  [class.ds-infobox--warning]="color === 'warning'"
+  [class.ds-infobox--danger]="color === 'danger'"
+  (click)="toggle()"
+  role="button"
+  [attr.tabindex]="collapsible ? 0 : null"
+>
+  <i [class]="icon" class="ds-infobox__icon"></i>
+
+  <ng-container *ngIf="isExpanded(); else collapsedTpl">
+    <div class="ds-infobox__content">
+      <span *ngIf="body" class="ds-infobox__body" [innerHTML]="body"></span>
+      <span *ngIf="!body" class="ds-infobox__body">
+        <ng-content></ng-content>
+      </span>
+      <i *ngIf="collapsible" class="fa-solid fa-xmark ds-infobox__close"></i>
+    </div>
+  </ng-container>
+
+  <ng-template #collapsedTpl>
+    <div class="ds-infobox__collapsed">
+      <span class="ds-infobox__title">{{ title }}</span>
+      <i class="fa-solid fa-chevron-down ds-infobox__chevron"></i>
+    </div>
+  </ng-template>
+</div>

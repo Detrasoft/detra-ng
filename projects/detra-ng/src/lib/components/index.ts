@@ -1,6 +1,7 @@
 // Buttons & primitives
 export { BadgeComponent } from './badge/badge.component';
 export { ButtonComponent } from './button/button.component';
+export { InfoboxComponent, type InfoboxColor } from './infobox/infobox.component';
 
 // Form controls (CVA)
 export { InputComponent } from './input/input.component';
