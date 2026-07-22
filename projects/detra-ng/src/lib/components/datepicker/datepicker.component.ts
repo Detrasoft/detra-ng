@@ -589,12 +589,26 @@ export class DatepickerComponent implements ControlValueAccessor, OnInit {
     );
   }
 
+  private getTimezoneOffsetString(date: Date): string {
+    const offsetMinutes = date.getTimezoneOffset();
+    if (offsetMinutes === 0) return 'Z';
+    const sign = offsetMinutes > 0 ? '-' : '+';
+    const absMinutes = Math.abs(offsetMinutes);
+    const hours = String(Math.floor(absMinutes / 60)).padStart(2, '0');
+    const mins = String(absMinutes % 60).padStart(2, '0');
+    return `${sign}${hours}:${mins}`;
+  }
+
   private toISO(d: Date): string {
     const yy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const dd = String(d.getDate()).padStart(2, '0');
     const dateStr = `${yy}-${mm}-${dd}`;
-    return this.outputFormat === 'datetime' ? `${dateStr}T00:00:00` : dateStr;
+    if (this.outputFormat === 'datetime') {
+      const offsetStr = this.getTimezoneOffsetString(d);
+      return `${dateStr}T00:00:00${offsetStr}`;
+    }
+    return dateStr;
   }
 
   private parseISO(s: string): Date | null {
