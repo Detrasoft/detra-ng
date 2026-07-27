@@ -33,7 +33,7 @@ import { ListColumnDirective } from './list-column.directive';
          DESKTOP TABLE VIEW + PAGINATION
          ═══════════════════════════════════════════ -->
     <div class="ds-list__table-container" data-testid="ds-list-table">
-      <table class="ds-list__table">
+      <table class="ds-list__table" [class.ds-list__table--resizable]="resizableColumns">
         <thead>
           <tr>
             <th
@@ -97,7 +97,7 @@ import { ListColumnDirective } from './list-column.directive';
                 (click)="onRowClick($event, row)"
                 [class.ds-list__row--clickable]="hasRowClick"
               >
-                <td *ngFor="let col of columns" [style.text-align]="col.align">
+                <td *ngFor="let col of columns" [style.width]="col.width || null" [style.text-align]="col.align">
                   <ng-container *ngIf="col.cellTemplate; else defaultGroupCell">
                     <ng-container
                       *ngTemplateOutlet="
@@ -126,7 +126,7 @@ import { ListColumnDirective } from './list-column.directive';
               (click)="onRowClick($event, row)"
               [class.ds-list__row--clickable]="hasRowClick"
             >
-              <td *ngFor="let col of columns" [style.text-align]="col.align">
+              <td *ngFor="let col of columns" [style.width]="col.width || null" [style.text-align]="col.align">
                 <ng-container *ngIf="col.cellTemplate; else defaultCell">
                   <ng-container
                     *ngTemplateOutlet="
@@ -396,7 +396,7 @@ export class ListComponent implements OnChanges, AfterViewInit, OnDestroy {
 
   // Resizable columns & localStorage inputs
   @Input() listId?: string;
-  @Input() resizableColumns = true;
+  @Input() resizableColumns = false;
 
   // Grouping & Sorting Inputs
   @Input() groupBy?: string;
@@ -471,17 +471,8 @@ export class ListComponent implements OnChanges, AfterViewInit, OnDestroy {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  get paginatedData(): any[] {
-    if (this.serverPagination) {
-      return this.data;
-    }
-    const start = (this.currentPage - 1) * this.pageSize;
-    return this.data.slice(start, start + this.pageSize);
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  get sortedPaginatedData(): any[] {
-    const list = [...this.paginatedData];
+  get sortedData(): any[] {
+    const list = [...this.data];
     if (!this.sortKey || this.serverPagination) return list;
     const key = this.sortKey;
     const order = this.sortOrder === 'asc' ? 1 : -1;
@@ -492,10 +483,24 @@ export class ListComponent implements OnChanges, AfterViewInit, OnDestroy {
       if (valA == null) return 1;
       if (valB == null) return -1;
       if (typeof valA === 'string' && typeof valB === 'string') {
-        return valA.localeCompare(valB) * order;
+        return valA.localeCompare(valB, undefined, { numeric: true, sensitivity: 'base' }) * order;
       }
       return (valA > valB ? 1 : valA < valB ? -1 : 0) * order;
     });
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get paginatedData(): any[] {
+    if (this.serverPagination) {
+      return this.data;
+    }
+    const start = (this.currentPage - 1) * this.pageSize;
+    return this.sortedData.slice(start, start + this.pageSize);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get sortedPaginatedData(): any[] {
+    return this.paginatedData;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -609,7 +614,10 @@ export class ListComponent implements OnChanges, AfterViewInit, OnDestroy {
         const deltaX = currentX - clientX;
         const newWidth = Math.max(50, Math.round(startWidth + deltaX));
         col.width = `${newWidth}px`;
-        this.cdr.markForCheck();
+        if (th) {
+          th.style.width = `${newWidth}px`;
+        }
+        this.cdr.detectChanges();
       };
 
       const onEnd = () => {
@@ -678,6 +686,7 @@ export class ListComponent implements OnChanges, AfterViewInit, OnDestroy {
       this.sortKey = col.key;
       this.sortOrder = 'asc';
     }
+    this.currentPage = 1;
     this.sortChange.emit({ key: this.sortKey, order: this.sortOrder });
   }
 
