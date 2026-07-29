@@ -68,6 +68,19 @@
   animation: dsInfoboxFadeIn 220ms ease-out forwards;
 }
 
+.ds-infobox__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1 1 auto;
+}
+
+.ds-infobox__title-expanded {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--ds-infobox-color, #1f1840);
+}
+
 .ds-infobox__close {
   font-size: 0.85rem;
   color: #7a70a8;

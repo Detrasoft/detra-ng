@@ -15,10 +15,13 @@
 
   <ng-container *ngIf="isExpanded(); else collapsedTpl">
     <div class="ds-infobox__content">
-      <span *ngIf="body" class="ds-infobox__body" [innerHTML]="body"></span>
-      <span *ngIf="!body" class="ds-infobox__body">
-        <ng-content></ng-content>
-      </span>
+      <div class="ds-infobox__text">
+        <strong *ngIf="title" class="ds-infobox__title-expanded">{{ title }}</strong>
+        <span *ngIf="body" class="ds-infobox__body" [innerHTML]="body"></span>
+        <span *ngIf="!body" class="ds-infobox__body">
+          <ng-content></ng-content>
+        </span>
+      </div>
       <i *ngIf="collapsible" class="fa-solid fa-xmark ds-infobox__close"></i>
     </div>
   </ng-container>

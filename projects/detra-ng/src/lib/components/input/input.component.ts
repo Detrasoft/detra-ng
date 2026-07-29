@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Input, forwardRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, forwardRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@angular/forms';
 
@@ -56,14 +56,24 @@ export class InputComponent implements ControlValueAccessor {
   @Input() mask = '';
   @Input() unmask = false;
 
-  value = '';
+  @Input()
+  get value(): string {
+    return this._value;
+  }
+  set value(val: string) {
+    const stringValue = val != null ? String(val) : '';
+    this._value = this.mask ? this.applyMask(stringValue) : stringValue;
+  }
+  private _value = '';
+
+  @Output() valueChange = new EventEmitter<string>();
 
   onChange: (value: string) => void = () => {};
   onTouched: () => void = () => {};
 
   writeValue(value: string): void {
     const stringValue = value != null ? String(value) : '';
-    this.value = this.mask ? this.applyMask(stringValue) : stringValue;
+    this._value = this.mask ? this.applyMask(stringValue) : stringValue;
   }
 
   registerOnChange(fn: (value: string) => void): void {
@@ -94,9 +104,10 @@ export class InputComponent implements ControlValueAccessor {
       }
     }
 
-    this.value = val;
+    this._value = val;
     const emitValue = this.unmask ? this.getUnmasked(val) : val;
     this.onChange(emitValue);
+    this.valueChange.emit(emitValue);
   }
 
   private applyMask(value: string): string {
