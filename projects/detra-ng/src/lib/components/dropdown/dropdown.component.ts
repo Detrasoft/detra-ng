@@ -74,8 +74,15 @@ import { Subscription } from 'rxjs';
             [class.ds-dropdown__placeholder]="!hasValue"
             style="display: inline-flex; align-items: center; gap: 8px;"
           >
-            <i *ngIf="hasValue && getSelectedIcon()" [class]="getSelectedIcon()"></i>
-            <span>{{ getDisplayValue() }}</span>
+            <ng-container *ngIf="selectedItemTemplate && hasValue; else defaultSelectedTpl">
+              <ng-container
+                *ngTemplateOutlet="selectedItemTemplate; context: { $implicit: getSelectedItem() }"
+              ></ng-container>
+            </ng-container>
+            <ng-template #defaultSelectedTpl>
+              <i *ngIf="hasValue && getSelectedIcon()" [class]="getSelectedIcon()"></i>
+              <span>{{ getDisplayValue() }}</span>
+            </ng-template>
           </span>
 
           <span
@@ -113,9 +120,40 @@ import { Subscription } from 'rxjs';
         role="listbox"
         [attr.aria-label]="label || 'Opções'"
       >
+        <!-- Filter Header -->
+        <div *ngIf="filter" class="ds-dropdown__filter-container">
+          <div class="ds-dropdown__filter-box">
+            <svg class="ds-dropdown__filter-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input
+              #filterInput
+              type="text"
+              class="ds-dropdown__filter-input"
+              [placeholder]="filterPlaceholder"
+              [value]="filterValue"
+              (input)="onFilterInput($event)"
+              (keydown)="onFilterKeydown($event)"
+            />
+            <button
+              *ngIf="filterValue"
+              type="button"
+              class="ds-dropdown__filter-clear"
+              (click)="clearFilter($event)"
+              title="Limpar busca"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+
         <!-- Items -->
         <button
-          *ngFor="let item of options; let i = index"
+          *ngFor="let item of filteredOptions; let i = index; trackBy: trackByFn"
           type="button"
           class="ds-dropdown__item"
           [class.ds-dropdown__item--active]="i === activeIndex"
@@ -142,8 +180,8 @@ import { Subscription } from 'rxjs';
         </button>
 
         <!-- Empty state -->
-        <div *ngIf="!options || options.length === 0" class="ds-dropdown__empty">
-          {{ emptyMessage }}
+        <div *ngIf="filteredOptions.length === 0" class="ds-dropdown__empty">
+          {{ filterValue ? emptyFilterMessage : emptyMessage }}
         </div>
       </div>
     </ng-template>
@@ -167,6 +205,10 @@ export class DropdownComponent implements ControlValueAccessor, OnDestroy {
   @Input() required = false;
   @Input() disabled = false;
   @Input() inputId = `ds-dd-${Math.random().toString(36).slice(2, 9)}`;
+  @Input() filter = true;
+  @Input() filterBy = '';
+  @Input() filterPlaceholder = 'Buscar...';
+  @Input() emptyFilterMessage = 'Nenhum resultado encontrado.';
 
   /* ── Outputs ── */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -175,15 +217,19 @@ export class DropdownComponent implements ControlValueAccessor, OnDestroy {
   /* ── Content projection ── */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   @ContentChild('itemTemplate') itemTemplate?: TemplateRef<{ $implicit: any }>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  @ContentChild('selectedItemTemplate') selectedItemTemplate?: TemplateRef<{ $implicit: any }>;
 
   /* ── ViewChildren ── */
   @ViewChild('panelTemplate') panelTemplate!: TemplateRef<unknown>;
   @ViewChild('origin') originRef!: ElementRef<HTMLElement>;
+  @ViewChild('filterInput') filterInput?: ElementRef<HTMLInputElement>;
 
   /* ── State ── */
   isPanelOpen = false;
   activeIndex = -1;
   panelId = `ds-dd-panel-${Math.random().toString(36).slice(2, 9)}`;
+  filterValue = '';
 
   /* ── Internals ── */
   private overlayRef: OverlayRef | null = null;
@@ -231,12 +277,17 @@ export class DropdownComponent implements ControlValueAccessor, OnDestroy {
     return this.value != null;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getSelectedItem(): any {
+    return this.findMatchingItem(this.value) || this.value;
+  }
+
   getDisplayValue(): string {
     if (!this.hasValue) {
       return this.placeholder;
     }
 
-    const selectedItem = this.findMatchingItem(this.value) || this.value;
+    const selectedItem = this.getSelectedItem();
     return this.getItemLabel(selectedItem);
   }
 
@@ -272,17 +323,97 @@ export class DropdownComponent implements ControlValueAccessor, OnDestroy {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  trackByFn(index: number, item: any): any {
+    if (item == null) return index;
+    if (this.optionValue) {
+      const val = this.resolveField(item, this.optionValue);
+      return val !== undefined ? val : index;
+    }
+    return item.id ?? item.value ?? item.val ?? index;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private findMatchingItem(val: any): any {
-    if (!this.options || val == null) return null;
+    if (!this.options) return null;
     return this.options.find((opt) => {
       if (this.optionValue) {
         return this.resolveField(opt, this.optionValue) === val;
       }
-      if (opt.id != null && val.id != null) {
+      if (opt && typeof opt === 'object' && opt.id !== undefined && val && typeof val === 'object' && val.id !== undefined) {
         return opt.id === val.id;
       }
       return opt === val;
     });
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get filteredOptions(): any[] {
+    if (!this.filter || !this.filterValue || this.filterValue.trim() === '') {
+      return this.options || [];
+    }
+
+    const query = this.filterValue.trim().toLowerCase();
+
+    return (this.options || []).filter((item) => {
+      if (item == null) return false;
+
+      // Direct label
+      const label = this.getItemLabel(item).toLowerCase();
+      if (label.includes(query)) return true;
+
+      // FilterBy specific field
+      if (this.filterBy) {
+        const val = this.resolveField(item, this.filterBy);
+        if (val != null && String(val).toLowerCase().includes(query)) return true;
+      }
+
+      // Object properties fallback
+      if (typeof item === 'object') {
+        for (const key of Object.keys(item)) {
+          const val = item[key];
+          if (val != null && typeof val !== 'object' && typeof val !== 'function') {
+            if (String(val).toLowerCase().includes(query)) {
+              return true;
+            }
+          }
+        }
+      }
+
+      return false;
+    });
+  }
+
+  onFilterInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.filterValue = input.value;
+    this.activeIndex = 0;
+    this.cdr.markForCheck();
+  }
+
+  onFilterKeydown(event: KeyboardEvent): void {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      if (this.filteredOptions.length > 0) {
+        this.activeIndex = 0;
+        this.scrollToActive();
+      }
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      if (this.filteredOptions.length > 0 && this.activeIndex >= 0 && this.activeIndex < this.filteredOptions.length) {
+        this.selectItem(this.filteredOptions[this.activeIndex]);
+      }
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      this.closePanel();
+    }
+  }
+
+  clearFilter(event: Event): void {
+    event.stopPropagation();
+    this.filterValue = '';
+    this.activeIndex = 0;
+    this.cdr.markForCheck();
+    setTimeout(() => this.filterInput?.nativeElement?.focus(), 10);
   }
 
   /* ── Input events ── */
@@ -300,7 +431,7 @@ export class DropdownComponent implements ControlValueAccessor, OnDestroy {
 
         if (this.hasValue) {
           const match = this.findMatchingItem(this.value);
-          this.activeIndex = match ? this.options.indexOf(match) : 0;
+          this.activeIndex = match ? this.filteredOptions.indexOf(match) : 0;
         } else {
           this.activeIndex = 0;
         }
@@ -311,21 +442,21 @@ export class DropdownComponent implements ControlValueAccessor, OnDestroy {
     switch (event.key) {
       case 'ArrowDown':
         event.preventDefault();
-        this.activeIndex = (this.activeIndex + 1) % (this.options?.length || 1);
+        this.activeIndex = (this.activeIndex + 1) % (this.filteredOptions?.length || 1);
         this.scrollToActive();
         break;
 
       case 'ArrowUp':
         event.preventDefault();
-        this.activeIndex = this.activeIndex <= 0 ? (this.options?.length || 1) - 1 : this.activeIndex - 1;
+        this.activeIndex = this.activeIndex <= 0 ? (this.filteredOptions?.length || 1) - 1 : this.activeIndex - 1;
         this.scrollToActive();
         break;
 
       case 'Enter':
       case ' ':
         event.preventDefault();
-        if (this.options && this.activeIndex >= 0 && this.activeIndex < this.options.length) {
-          this.selectItem(this.options[this.activeIndex]);
+        if (this.filteredOptions && this.activeIndex >= 0 && this.activeIndex < this.filteredOptions.length) {
+          this.selectItem(this.filteredOptions[this.activeIndex]);
         }
         break;
 
@@ -351,7 +482,7 @@ export class DropdownComponent implements ControlValueAccessor, OnDestroy {
       this.openPanel();
       if (this.hasValue) {
         const match = this.findMatchingItem(this.value);
-        this.activeIndex = match ? this.options.indexOf(match) : 0;
+        this.activeIndex = match ? this.filteredOptions.indexOf(match) : 0;
         setTimeout(() => this.scrollToActive(), 50);
       } else {
         this.activeIndex = -1;
@@ -417,8 +548,15 @@ export class DropdownComponent implements ControlValueAccessor, OnDestroy {
     const portal = new TemplatePortal(this.panelTemplate, this.vcr);
     this.overlayRef.attach(portal);
 
+    this.filterValue = '';
     this.isPanelOpen = true;
     this.cdr.markForCheck();
+
+    if (this.filter) {
+      setTimeout(() => {
+        this.filterInput?.nativeElement?.focus();
+      }, 50);
+    }
 
     this.backdropSub?.unsubscribe();
     this.backdropSub = this.overlayRef.backdropClick().subscribe(() => {
@@ -437,6 +575,7 @@ export class DropdownComponent implements ControlValueAccessor, OnDestroy {
       this.overlayRef = null;
     }
     this.backdropSub?.unsubscribe();
+    this.filterValue = '';
     this.isPanelOpen = false;
     this.cdr.markForCheck();
   }

@@ -16,6 +16,14 @@ export type { ApiFieldError, ApiValidationError } from './error-panel/error-pane
 export { ListComponent } from './list/list.component';
 export { ListColumnDirective } from './list/list-column.directive';
 export { TreeComponent, type TreeNode } from './tree/tree.component';
+export { OrganizationChartComponent } from './organization-chart/organization-chart.component';
+export type {
+  OrgChartNode,
+  OrgChartMember,
+  OrgChartNodeType,
+  OrgChartOrientation,
+  OrgChartSelectionMode,
+} from './organization-chart/organization-chart.types';
 
 // Layout
 export { TabbarComponent } from './tabbar/tabbar.component';

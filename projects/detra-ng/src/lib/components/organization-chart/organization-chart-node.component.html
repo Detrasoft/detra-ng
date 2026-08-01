@@ -1,0 +1,266 @@
+<!--
+  Um único template atende as duas orientações.
+  A direção (coluna x linha) e o desenho dos conectores ficam no CSS,
+  controlados pelas classes ds-org-node-v / ds-org-node-h.
+-->
+<div
+  class="ds-org-node"
+  [class.ds-org-node-v]="isVertical"
+  [class.ds-org-node-h]="!isVertical"
+>
+  <!-- ── Card + botão de expandir/colapsar ── -->
+  <div class="ds-org-node-self">
+    <div
+      class="ds-org-chart-node-content"
+      [ngClass]="cardClasses"
+      [class.ds-org-chart-node-selectable]="isSelectable"
+      [class.ds-org-chart-node-selected]="isSelected"
+      [ngStyle]="customColorStyles"
+      [attr.role]="isSelectable ? 'button' : null"
+      [attr.tabindex]="isSelectable ? 0 : null"
+      [attr.aria-pressed]="isSelectable ? isSelected : null"
+      (click)="onNodeClick($event)"
+      (keydown)="onNodeKeydown($event)"
+    >
+      <!-- Template customizado, quando fornecido -->
+      <ng-container *ngIf="nodeTemplate; else defaultCard">
+        <ng-container
+          *ngTemplateOutlet="nodeTemplate; context: { $implicit: node, node: node }"
+        ></ng-container>
+      </ng-container>
+
+      <!-- Card padrão -->
+      <ng-template #defaultCard>
+        <!-- ── Department / Group card ── -->
+        <ng-container *ngIf="isDepartment; else personCard">
+          <div class="ds-org-department-card">
+            <div class="ds-org-department-header" [ngClass]="cardClasses">
+              <div class="ds-org-dept-title-box">
+                <i *ngIf="node.icon" [class]="node.icon" aria-hidden="true"></i>
+                <span>{{ departmentDisplayLabel }}</span>
+              </div>
+              <div class="ds-org-card-actions" (click)="$event.stopPropagation()">
+                <div class="ds-org-order-btns">
+                  <button
+                    type="button"
+                    class="ds-org-order-btn"
+                    title="Mover para cima / esquerda na hierarquia"
+                    (click)="onMoveUp($event)"
+                  >
+                    <i class="fa-solid fa-chevron-up" aria-hidden="true"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="ds-org-order-btn"
+                    title="Mover para baixo / direita na hierarquia"
+                    (click)="onMoveDown($event)"
+                  >
+                    <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="ds-org-department-members" *ngIf="hasMembers">
+              <!-- Micro org chart: render root members as a tree -->
+              <div class="ds-org-micro-chart">
+                <ng-container *ngFor="let member of node.members; trackBy: trackByMember">
+                  <ng-container
+                    *ngTemplateOutlet="memberTree; context: { $implicit: member, depth: 0 }"
+                  ></ng-container>
+                </ng-container>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- ── Person card (padrão) ── -->
+        <ng-template #personCard>
+          <div class="ds-org-card-inner">
+            <img
+              *ngIf="node.avatar"
+              class="ds-org-card-avatar"
+              [src]="node.avatar"
+              [alt]="displayTitle"
+            />
+            <div class="ds-org-card-icon-box" *ngIf="!node.avatar && node.icon">
+              <i [class]="node.icon" aria-hidden="true"></i>
+            </div>
+
+            <div class="ds-org-card-body">
+              <div class="ds-org-card-title-row">
+                <div class="ds-org-card-title" *ngIf="displayTitle">{{ displayTitle }}</div>
+                <div class="ds-org-card-actions" (click)="$event.stopPropagation()">
+                  <div class="ds-org-order-btns">
+                    <button
+                      type="button"
+                      class="ds-org-order-btn"
+                      title="Mover para cima / esquerda na hierarquia"
+                      (click)="onMoveUp($event)"
+                    >
+                      <i class="fa-solid fa-chevron-up" aria-hidden="true"></i>
+                    </button>
+                    <button
+                      type="button"
+                      class="ds-org-order-btn"
+                      title="Mover para baixo / direita na hierarquia"
+                      (click)="onMoveDown($event)"
+                    >
+                      <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                  <a
+                    *ngIf="nodeLink"
+                    [href]="nodeLink"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="ds-org-card-link-btn"
+                    title="Abrir site / portfólio"
+                  >
+                    <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                  </a>
+                </div>
+              </div>
+              <div class="ds-org-card-subtitle" *ngIf="node.subtitle">{{ node.subtitle }}</div>
+              <div class="ds-org-card-description" *ngIf="node.description">
+                {{ node.description }}
+              </div>
+            </div>
+          </div>
+        </ng-template>
+      </ng-template>
+    </div>
+
+    <!--
+      Renderizado sempre que o nó tem filhos, esteja expandido ou colapsado,
+      de modo que colapsar nunca deixa o nó sem forma de voltar a expandir.
+    -->
+    <button
+      *ngIf="hasChildren && collapsible"
+      type="button"
+      class="ds-org-chart-toggle"
+      [class.ds-org-chart-toggle-collapsed]="!isExpanded"
+      [attr.aria-expanded]="isExpanded"
+      [attr.aria-label]="toggleLabel"
+      [title]="toggleLabel"
+      (click)="toggleExpand($event)"
+    >
+      <span class="ds-org-chart-toggle-icon" aria-hidden="true"></span>
+    </button>
+
+    <!-- Indicador de subárvore oculta -->
+    <span *ngIf="hasChildren && !isExpanded" class="ds-org-chart-collapsed-badge">
+      {{ descendantCount }}
+    </span>
+  </div>
+
+  <!-- ── Subárvore ── -->
+  <ng-container *ngIf="hasChildren && isExpanded">
+    <!-- Tronco que sai do card em direção à barra dos filhos -->
+    <div class="ds-org-stem"></div>
+
+    <div class="ds-org-children">
+      <div
+        class="ds-org-branch"
+        *ngFor="let child of node.children; trackBy: trackByNode"
+      >
+        <ds-organization-chart-node
+          [node]="child"
+          [orientation]="orientation"
+          [selectionMode]="selectionMode"
+          [selection]="selection"
+          [collapsible]="collapsible"
+          [nodeTemplate]="nodeTemplate"
+          (nodeSelect)="nodeSelect.emit($event)"
+          (nodeUnselect)="nodeUnselect.emit($event)"
+          (nodeExpand)="nodeExpand.emit($event)"
+          (nodeCollapse)="nodeCollapse.emit($event)"
+          (selectionChange)="selectionChange.emit($event)"
+          (nodeMoveUp)="nodeMoveUp.emit($event)"
+          (nodeMoveDown)="nodeMoveDown.emit($event)"
+        ></ds-organization-chart-node>
+      </div>
+    </div>
+  </ng-container>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     Recursive template for rendering micro org chart
+     inside department containers
+     ══════════════════════════════════════════════════════════ -->
+<ng-template #memberTree let-member let-depth="depth">
+  <div class="ds-org-micro-node">
+    <!-- Member card -->
+    <div
+      class="ds-org-member-card"
+      [class.ds-org-member-card--selectable]="isSelectable"
+      [class.ds-org-member-card--selected]="isMemberSelected(member)"
+      [ngClass]="getMemberColorClass(member)"
+      [ngStyle]="getMemberCustomColorStyles(member)"
+      (click)="onMemberClick(member, $event)"
+      (keydown)="onMemberKeydown(member, $event)"
+      [attr.tabindex]="isSelectable ? 0 : null"
+      [attr.role]="isSelectable ? 'button' : null"
+    >
+      <img
+        *ngIf="member.avatar"
+        class="ds-org-member-avatar"
+        [src]="member.avatar"
+        [alt]="member.title"
+      />
+      <div class="ds-org-member-icon-box" *ngIf="!member.avatar && member.icon">
+        <i [class]="member.icon" aria-hidden="true"></i>
+      </div>
+      <div class="ds-org-member-body">
+        <div class="ds-org-member-title-row">
+          <div class="ds-org-member-title" *ngIf="member.title">{{ member.title }}</div>
+          <div class="ds-org-card-actions" (click)="$event.stopPropagation()">
+            <div class="ds-org-order-btns">
+              <button
+                type="button"
+                class="ds-org-order-btn ds-org-order-btn--sm"
+                title="Mover para cima / esquerda na hierarquia"
+                (click)="onMemberMoveUp(member, $event)"
+              >
+                <i class="fa-solid fa-chevron-up" aria-hidden="true"></i>
+              </button>
+              <button
+                type="button"
+                class="ds-org-order-btn ds-org-order-btn--sm"
+                title="Mover para baixo / direita na hierarquia"
+                (click)="onMemberMoveDown(member, $event)"
+              >
+                <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+              </button>
+            </div>
+            <a
+              *ngIf="getMemberLink(member)"
+              [href]="getMemberLink(member)"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="ds-org-card-link-btn ds-org-card-link-btn--sm"
+              title="Abrir site / portfólio"
+            >
+              <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+            </a>
+          </div>
+        </div>
+        <div class="ds-org-member-subtitle" *ngIf="member.subtitle">{{ member.subtitle }}</div>
+      </div>
+    </div>
+
+    <!-- Sub-tree: children of this member -->
+    <ng-container *ngIf="member.children && member.children.length > 0">
+      <div class="ds-org-micro-stem"></div>
+      <div class="ds-org-micro-children">
+        <div
+          class="ds-org-micro-branch"
+          *ngFor="let child of member.children; trackBy: trackByMember"
+        >
+          <ng-container
+            *ngTemplateOutlet="memberTree; context: { $implicit: child, depth: depth + 1 }"
+          ></ng-container>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+</ng-template>

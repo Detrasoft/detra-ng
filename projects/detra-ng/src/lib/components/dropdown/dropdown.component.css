@@ -1,6 +1,37 @@
-/* ============================================
-   Dropdown Component — Styles
-   ============================================ */
+/* ── CDK Overlay Rules ── */
+.cdk-overlay-container,
+.cdk-overlay-connected-position-bounding-box {
+  position: fixed;
+  z-index: 100000 !important;
+  pointer-events: none;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.cdk-overlay-pane {
+  position: absolute;
+  pointer-events: auto;
+  box-sizing: border-box;
+  z-index: 100000 !important;
+  display: flex;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.cdk-overlay-backdrop {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100000 !important;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+  opacity: 0;
+}
 
 /* ── Wrapper ── */
 .ds-dropdown-wrapper {
@@ -13,10 +44,10 @@
 /* ── Label ── */
 .ds-dropdown__label {
   display: block;
-  font-size: var(--text-sm);
-  font-weight: var(--font-medium);
-  color: var(--input-label);
-  margin-bottom: var(--space-1);
+  font-size: var(--text-sm, 0.85rem);
+  font-weight: var(--font-medium, 600);
+  color: var(--input-label, #334155);
+  margin-bottom: 6px;
 }
 
 .ds-dropdown__required {
@@ -39,28 +70,28 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  min-height: 42px;
-  padding: var(--space-1) var(--space-3);
-  font-family: var(--font-family-sans);
-  font-size: var(--text-sm);
-  color: var(--input-text);
-  background-color: var(--input-bg);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid var(--input-border);
-  border-radius: 10px;
-  transition: all var(--transition-fast);
+  min-height: 38px;
+  padding: 8px 12px;
+  font-family: var(--font-family-sans, inherit);
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--input-text, #0f172a);
+  background-color: var(--input-bg, #ffffff);
+  border: 1px solid var(--input-border, #cbd5e1);
+  border-radius: var(--radius-md, 8px);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
   cursor: pointer;
   text-align: left;
+  box-sizing: border-box;
 }
 
 .ds-dropdown__field:hover:not(.ds-dropdown__field--disabled) {
-  border-color: var(--input-border-hover);
+  border-color: var(--input-border-hover, #94a3b8);
 }
 
 .ds-dropdown__field--focused {
-  border-color: var(--input-border-focus);
-  box-shadow: var(--input-focus-shadow);
+  border-color: var(--input-border-focus, #2563eb);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  outline: none;
 }
 
 .ds-dropdown__field--disabled {
@@ -136,6 +167,70 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* ── Filter Search Bar ── */
+.ds-dropdown__filter-container {
+  position: sticky;
+  top: 0;
+  background: var(--dropdown-bg, #ffffff);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--input-border, #e2e8f0);
+  z-index: 10;
+}
+
+.ds-dropdown__filter-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.ds-dropdown__filter-icon {
+  position: absolute;
+  left: 10px;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.ds-dropdown__filter-input {
+  width: 100%;
+  padding: 7px 28px 7px 32px;
+  font-family: var(--font-family-sans, inherit);
+  font-size: var(--text-sm, 0.85rem);
+  color: var(--input-text, #0f172a);
+  background: var(--input-bg, #f8fafc);
+  border: 1px solid var(--input-border, #cbd5e1);
+  border-radius: var(--radius-md, 6px);
+  outline: none;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+}
+
+.ds-dropdown__filter-input:focus {
+  background: #ffffff;
+  border-color: var(--input-border-focus, #2563eb);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.ds-dropdown__filter-clear {
+  position: absolute;
+  right: 6px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: 50%;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.ds-dropdown__filter-clear:hover {
+  color: #475569;
+  background: #e2e8f0;
 }
 
 /* ── List Items ── */

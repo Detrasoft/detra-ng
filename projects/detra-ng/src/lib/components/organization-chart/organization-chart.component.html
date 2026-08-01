@@ -1,0 +1,28 @@
+<div
+  class="ds-org-chart-container"
+  [class.ds-org-chart-vertical]="orientation === 'vertical'"
+  [class.ds-org-chart-horizontal]="orientation === 'horizontal'"
+>
+  <div class="ds-org-chart-canvas" *ngIf="value?.length; else emptyState">
+    <ds-organization-chart-node
+      *ngFor="let rootNode of value; trackBy: trackByNode"
+      [node]="rootNode"
+      [orientation]="orientation"
+      [selectionMode]="selectionMode"
+      [selection]="selection"
+      [collapsible]="collapsible"
+      [nodeTemplate]="nodeTemplate"
+      (nodeSelect)="nodeSelect.emit($event)"
+      (nodeUnselect)="nodeUnselect.emit($event)"
+      (nodeExpand)="nodeExpand.emit($event)"
+      (nodeCollapse)="nodeCollapse.emit($event)"
+      (selectionChange)="onSelectionChange($event)"
+      (nodeMoveUp)="nodeMoveUp.emit($event)"
+      (nodeMoveDown)="nodeMoveDown.emit($event)"
+    ></ds-organization-chart-node>
+  </div>
+
+  <ng-template #emptyState>
+    <div class="ds-org-chart-empty">{{ emptyMessage }}</div>
+  </ng-template>
+</div>
