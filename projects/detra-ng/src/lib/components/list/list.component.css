@@ -176,13 +176,15 @@
 
 .ds-list__actions-th {
   text-align: right !important;
-  width: 1%;
+  width: 120px;
+  min-width: 80px;
   white-space: nowrap;
 }
 
 .ds-list__actions-td {
   text-align: right !important;
-  width: 1%;
+  width: 120px;
+  min-width: 80px;
   white-space: nowrap;
 }
 

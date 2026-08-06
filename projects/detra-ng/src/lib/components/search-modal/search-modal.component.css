@@ -345,8 +345,8 @@
 /* Mobile responsive */
 @media (max-width: 768px) {
   .ds-search-modal__card {
-    width: 95vw;
-    height: 95vh;
+    width: 98vw;
+    height: 85vh;
     border-radius: var(--radius-lg, 16px);
   }
 }

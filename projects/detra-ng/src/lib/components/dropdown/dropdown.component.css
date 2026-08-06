@@ -70,14 +70,14 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  min-height: 38px;
+  min-height: 44px;
   padding: 8px 12px;
   font-family: var(--font-family-sans, inherit);
   font-size: var(--text-sm, 0.875rem);
   color: var(--input-text, #0f172a);
   background-color: var(--input-bg, #ffffff);
   border: 1px solid var(--input-border, #cbd5e1);
-  border-radius: var(--radius-md, 8px);
+  border-radius: var(--radius-lg, 16px);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   cursor: pointer;
   text-align: left;

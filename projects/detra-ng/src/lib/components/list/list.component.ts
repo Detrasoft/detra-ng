@@ -606,7 +606,10 @@ export class ListComponent implements OnChanges, AfterViewInit, OnDestroy {
 
     const clientX = 'touches' in event ? event.touches[0].clientX : event.clientX;
     const th = (event.target as HTMLElement).closest('th');
-    const startWidth = th ? th.getBoundingClientRect().width : 100;
+    if (!th) return;
+    const startWidth = th.getBoundingClientRect().width;
+    const table = th.closest('table') as HTMLTableElement | null;
+    const startTableWidth = table ? table.getBoundingClientRect().width : 0;
 
     this.ngZone.runOutsideAngular(() => {
       const onMove = (moveEvt: MouseEvent | TouchEvent) => {
@@ -614,8 +617,12 @@ export class ListComponent implements OnChanges, AfterViewInit, OnDestroy {
         const deltaX = currentX - clientX;
         const newWidth = Math.max(50, Math.round(startWidth + deltaX));
         col.width = `${newWidth}px`;
-        if (th) {
-          th.style.width = `${newWidth}px`;
+        th.style.width = `${newWidth}px`;
+
+        // Also update the table total width so other columns keep their sizes
+        if (table) {
+          const newTableWidth = Math.round(startTableWidth + deltaX);
+          table.style.width = `${Math.max(newTableWidth, 300)}px`;
         }
         this.cdr.detectChanges();
       };

@@ -60,6 +60,8 @@ export class TreeComponent {
   /* ── Outputs ── */
 
   @Output() selectionChange = new EventEmitter<TreeNode[]>();
+  @Output() nodeExpand = new EventEmitter<{ node: TreeNode }>();
+  @Output() nodeCollapse = new EventEmitter<{ node: TreeNode }>();
 
   /* ── Template ref for recursion ── */
   @ViewChild('nodeTemplate', { static: true })
@@ -72,7 +74,13 @@ export class TreeComponent {
   toggleExpand(node: TreeNode, event: Event): void {
     event.stopPropagation();
     node.expanded = !node.expanded;
+    if (node.expanded) {
+      this.nodeExpand.emit({ node });
+    } else {
+      this.nodeCollapse.emit({ node });
+    }
   }
+
 
   expandAll(): void {
     this.setExpandedRecursive(this.value, true);
@@ -178,7 +186,9 @@ export class TreeComponent {
     // Auto-expand ao selecionar (UX melhoria)
     if (this.hasChildren(node) && !node.expanded) {
       node.expanded = true;
+      this.nodeExpand.emit({ node });
     }
+
 
     this.selectionChange.emit([...this.selection]);
   }
