@@ -1,0 +1,195 @@
+<div
+  *ngIf="visible"
+  class="ds-crop-root"
+  [class.ds-crop-root--modal]="modal"
+  (keydown.escape)="cancel()"
+  tabindex="-1"
+>
+  <div
+    *ngIf="modal"
+    class="ds-crop-backdrop"
+    (click)="onBackdropClick()"
+    aria-hidden="true"
+  ></div>
+
+  <div class="ds-crop-dialog" role="dialog" [attr.aria-modal]="modal" [attr.aria-label]="title">
+    <!-- Header -->
+    <header class="ds-crop-header">
+      <div class="ds-crop-header__title-group">
+        <div class="ds-crop-header__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 2v14a2 2 0 0 0 2 2h14" />
+            <path d="M18 22V8a2 2 0 0 0-2-2H2" />
+          </svg>
+        </div>
+        <h3 class="ds-crop-header__title">{{ title }}</h3>
+      </div>
+      <button
+        type="button"
+        class="ds-crop-header__close"
+        (click)="cancel()"
+        aria-label="Fechar modal de recorte"
+      >
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+    </header>
+
+    <!-- Body -->
+    <div class="ds-crop-body">
+      <!-- Main Canvas Viewport -->
+      <div class="ds-crop-viewport">
+        <div class="ds-crop-canvas-wrapper" #canvasContainer>
+          <canvas
+            #cropCanvas
+            class="ds-crop-canvas"
+            [width]="canvasWidth"
+            [height]="canvasHeight"
+            (mousedown)="onMouseDown($event)"
+            (mousemove)="onMouseMove($event)"
+            (mouseup)="onMouseUp()"
+            (mouseleave)="onMouseUp()"
+            (wheel)="onWheel($event)"
+            (touchstart)="onTouchStart($event)"
+            (touchmove)="onTouchMove($event)"
+            (touchend)="onTouchEnd()"
+            (touchcancel)="onTouchEnd()"
+          ></canvas>
+        </div>
+        <span class="ds-crop-hint">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/>
+          </svg>
+          Arraste para mover • Roda do mouse ou pinça para zoom
+        </span>
+      </div>
+
+      <!-- Controls Panel -->
+      <aside class="ds-crop-controls">
+        <!-- Zoom Section -->
+        <div class="ds-crop-control-group">
+          <div class="ds-crop-control-group__header">
+            <label for="ds-crop-zoom-range" class="ds-crop-label">{{ zoomLabel }}</label>
+            <span class="ds-crop-badge">{{ (scale * 100).toFixed(0) }}%</span>
+          </div>
+          <div class="ds-crop-zoom-bar">
+            <button
+              type="button"
+              class="ds-crop-icon-btn"
+              (click)="zoomOut()"
+              title="Diminuir zoom"
+              aria-label="Diminuir zoom"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            </button>
+            <input
+              id="ds-crop-zoom-range"
+              type="range"
+              class="ds-crop-slider"
+              [(ngModel)]="scale"
+              (ngModelChange)="onScaleChange()"
+              [min]="minZoom"
+              [max]="maxZoom"
+              [step]="zoomStep"
+            />
+            <button
+              type="button"
+              class="ds-crop-icon-btn"
+              (click)="zoomIn()"
+              title="Aumentar zoom"
+              aria-label="Aumentar zoom"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Transformation & Rotation Tools -->
+        <div class="ds-crop-control-group">
+          <label class="ds-crop-label">{{ rotateLabel }}</label>
+          <div class="ds-crop-action-row">
+            <button
+              type="button"
+              class="ds-crop-tool-btn"
+              (click)="rotateLeft()"
+              title="Girar 90° para a esquerda"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+              </svg>
+              <span>-90°</span>
+            </button>
+            <button
+              type="button"
+              class="ds-crop-tool-btn"
+              (click)="rotateRight()"
+              title="Girar 90° para a direita"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12a9 9 0 1 1-9-9 c2.52 0 4.8 1 6.74 2.74L21 8" />
+                <path d="M21 3v5h-5" />
+              </svg>
+              <span>+90°</span>
+            </button>
+            <button
+              type="button"
+              class="ds-crop-tool-btn"
+              (click)="resetTransform()"
+              title="Centralizar e resetar ajustes"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                <path d="M21 3v5h-5" />
+                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                <path d="M3 21v-5h5" />
+              </svg>
+              <span>{{ resetLabel }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Live Preview -->
+        <div class="ds-crop-preview-card">
+          <div class="ds-crop-label">{{ previewLabel }}</div>
+          <div class="ds-crop-preview-wrapper" [class.ds-crop-preview--circle]="shape === 'circle'">
+            <canvas
+              #previewCanvas
+              class="ds-crop-preview-canvas"
+              width="80"
+              height="80"
+            ></canvas>
+          </div>
+          <span class="ds-crop-dim-badge">{{ outputWidth }} × {{ outputHeight }} px</span>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Footer -->
+    <footer class="ds-crop-footer">
+      <button
+        type="button"
+        class="ds-crop-btn ds-crop-btn--secondary"
+        (click)="cancel()"
+      >
+        {{ cancelLabel }}
+      </button>
+      <button
+        type="button"
+        class="ds-crop-btn ds-crop-btn--primary"
+        [disabled]="isProcessing"
+        (click)="crop()"
+      >
+        <span *ngIf="isProcessing" class="ds-crop-spinner"></span>
+        <span>{{ applyLabel }}</span>
+      </button>
+    </footer>
+  </div>
+</div>

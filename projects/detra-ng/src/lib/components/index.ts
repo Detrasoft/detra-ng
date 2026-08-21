@@ -56,3 +56,11 @@ export { SearchModalComponent } from './search-modal/search-modal.component';
 
 // Rich editor
 export { HtmlEditorComponent } from './html-editor/html-editor.component';
+
+// Media & Image Crop
+export { ImageCropComponent } from './image-crop/image-crop.component';
+export type {
+  CropResult,
+  ImageCropShape,
+  ImageCropOutputFormat,
+} from './image-crop/image-crop.types';

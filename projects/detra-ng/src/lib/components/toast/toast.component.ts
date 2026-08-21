@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ToastService, ToastMessage } from './toast.service';
 
@@ -102,7 +102,7 @@ import { ToastService, ToastMessage } from './toast.service';
   styleUrl: './toast.component.css',
 })
 export class ToastComponent {
-  public toastService = inject(ToastService);
+  constructor(public toastService: ToastService) {}
 
   close(id: string): void {
     this.toastService.remove(id);

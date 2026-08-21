@@ -255,17 +255,14 @@
   text-align: left;
 }
 
-.ds-autocomplete__item:hover {
-  background-color: var(--dropdown-item-hover);
-}
-
+.ds-autocomplete__item:hover,
 .ds-autocomplete__item--active {
-  background-color: var(--color-primary-600);
-  color: var(--color-text-inverse);
+  background-color: var(--dropdown-item-hover, rgba(137, 111, 244, 0.12));
+  color: var(--dropdown-item-text, var(--color-text-primary));
 }
 
 .ds-autocomplete__item--active:hover {
-  background-color: var(--color-primary-700);
+  background-color: var(--dropdown-item-hover, rgba(137, 111, 244, 0.18));
 }
 
 /* ── Selected check (multiple mode) ── */

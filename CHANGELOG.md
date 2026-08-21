@@ -5,7 +5,15 @@ Todas as mudanças relevantes neste projeto serão documentadas aqui.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
-## [0.6.13] — 2026-08-06
+## [0.6.15] — 2026-08-21
+
+### Adicionado
+
+- **ImageCropComponent (`ds-image-crop`)**: Novo componente standalone e híbrido para recorte interativo de imagens com suporte a desktop (mouse drag, wheel zoom, rotações) e mobile/tablets (touch pan, pinch-to-zoom com 2 dedos, high-DPI canvas rendering).
+- Suporte a múltiplos formatos (`png`, `jpeg`, `webp`), formas (`circle`, `round-rect`, `rect`), preview ao vivo e exportação de arquivo pronto para upload.
+
+## [0.6.14] — 2026-08-17
+
 
 ### Adicionado
 

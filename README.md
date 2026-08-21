@@ -6,7 +6,7 @@ pickers, listas, árvores, dialogs, toasts, search genérica e editor HTML
 sem dependências de UI de terceiros (Material, PrimeNG, etc.).
 
 > **Escopo:** `@detrasoft.com/detra-ng`
-> **Versão atual:** `0.6.13` — Angular 17 / 18 / 19 / 20 (peer-deps).
+> **Versão atual:** `0.6.15` — Angular 17 / 18 / 19 / 20 (peer-deps).
 
 ---
 
@@ -14,20 +14,21 @@ sem dependências de UI de terceiros (Material, PrimeNG, etc.).
 
 | Categoria           | Componentes / APIs                                                                                       |
 | ------------------- | -------------------------------------------------------------------------------------------------------- |
-| Primitivos          | `BadgeComponent`, `ButtonComponent`                                                                      |
+| Primitivos          | `BadgeComponent`, `ButtonComponent`, `InfoboxComponent`                                                  |
 | Form controls (CVA) | `InputComponent`, `TextareaComponent`, `CheckboxComponent`                                               |
 | Layout              | `TabbarComponent`, `TabComponent`                                                                        |
-| Pickers             | `DatepickerComponent` (locale pt-BR / en)                                                                |
+| Pickers             | `DatepickerComponent` (locale pt-BR / en), `TimeComponent`                                               |
 | Dropdowns           | `DropdownComponent`, `AutocompleteComponent`                                                             |
 | Dialogs             | `DialogComponent`, `ConfirmDialogComponent`                                                              |
 | Toast               | `ToastComponent`, `ToastService`                                                                         |
 | Search              | `SearchComponent`, `SearchModalComponent`, `provideHttpDetraSearchAdapter`, `DETRA_SEARCH_ADAPTER` token |
-| Lists               | `ListComponent`, `ListColumnDirective`                                                                   |
-| Trees               | `TreeComponent`                                                                                          |
+| Lists & Trees       | `ListComponent`, `ListColumnDirective`, `TreeComponent`, `OrganizationChartComponent`                     |
+| Media & Imagens     | `ImageCropComponent` (híbrido Desktop/Mobile, pinch-to-zoom, touch pan, rotação, multi-formatos)         |
 | Errors              | `ErrorPanelComponent`                                                                                    |
 | Editor              | `HtmlEditorComponent`                                                                                    |
 
 Todos os componentes são **standalone** (sem `NgModule`) e com
+
 `ChangeDetectionStrategy.OnPush`.
 
 ---
