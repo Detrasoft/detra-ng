@@ -1,4 +1,15 @@
-import { ChangeDetectionStrategy, Component, ContentChild, Input, TemplateRef, ViewChild } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  Input,
+  OnChanges,
+  SimpleChanges,
+  TemplateRef,
+  ViewChild,
+  forwardRef,
+} from '@angular/core';
+import { TabbarComponent } from './tabbar.component';
 
 /**
  * Represents a single tab panel inside a `<ds-tabbar>`.
@@ -20,7 +31,9 @@ import { ChangeDetectionStrategy, Component, ContentChild, Input, TemplateRef, V
     </ng-template>
   `,
 })
-export class TabComponent {
+export class TabComponent implements OnChanges {
+  private readonly tabbar = inject(forwardRef(() => TabbarComponent), { optional: true });
+
   /** Unique identifier for this tab. */
   @Input({ required: true }) id!: string;
 
@@ -34,4 +47,10 @@ export class TabComponent {
   @Input() badge: number | null = null;
 
   @ViewChild('content', { static: true }) contentTemplate!: TemplateRef<void>;
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (this.tabbar) {
+      this.tabbar.markForCheck();
+    }
+  }
 }

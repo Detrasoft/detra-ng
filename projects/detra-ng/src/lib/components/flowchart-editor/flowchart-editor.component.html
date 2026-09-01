@@ -1,0 +1,191 @@
+<div class="flowchart-modal-backdrop" (click)="onCancel()">
+  <div class="flowchart-modal-card" (click)="$event.stopPropagation()">
+    <!-- ─── Cabeçalho ─── -->
+    <header class="modal-header">
+      <div class="header-title-wrap">
+        <i class="fa-solid fa-diagram-project header-icon"></i>
+        <h3>{{ title }}</h3>
+      </div>
+      <button type="button" class="btn-close" (click)="onCancel()" title="Fechar">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </header>
+
+    <!-- ─── Barra de Ferramentas (Toolbar) ─── -->
+    <div class="modal-toolbar">
+      <!-- Adicionar Formas -->
+      <div class="toolbar-group">
+        <span class="group-label">Formas:</span>
+        <button type="button" class="btn-tool" (click)="addNode('process')" title="Adicionar Processo">
+          <i class="fa-solid fa-square-plus"></i> Processo
+        </button>
+        <button type="button" class="btn-tool" (click)="addNode('terminal')" title="Adicionar Início / Fim">
+          <i class="fa-solid fa-circle-play"></i> Início/Fim
+        </button>
+        <button type="button" class="btn-tool" (click)="addNode('decision')" title="Adicionar Decisão Condicional">
+          <i class="fa-solid fa-diamond"></i> Decisão
+        </button>
+        <button type="button" class="btn-tool" (click)="addNode('database')" title="Adicionar Banco de Dados">
+          <i class="fa-solid fa-database"></i> Banco
+        </button>
+      </div>
+
+      <!-- Conexões e Direção -->
+      <div class="toolbar-group">
+        <button
+          type="button"
+          class="btn-tool"
+          [class.active]="connectingSourceId() !== null"
+          (click)="toggleConnectMode()"
+          [disabled]="!selectedNodeId()"
+          title="Clique em um nó selecionado e depois clique no nó de destino"
+        >
+          <i class="fa-solid fa-arrow-right-long"></i>
+          {{ connectingSourceId() ? 'Clique no Destino...' : 'Conectar Nó' }}
+        </button>
+
+        <button type="button" class="btn-tool" (click)="toggleDirection()" title="Alternar Direção do Fluxo">
+          <i class="fa-solid fa-repeat"></i>
+          Direção: <strong>{{ direction() === 'LR' ? 'Horizontal (LR)' : 'Vertical (TB)' }}</strong>
+        </button>
+      </div>
+
+      <!-- Ações Rápidas -->
+      <div class="toolbar-group ms-auto">
+        <!-- Templates -->
+        <div class="dropdown-templates">
+          <button type="button" class="btn-tool" title="Carregar Exemplo">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Exemplos
+          </button>
+          <div class="templates-menu">
+            <button type="button" (click)="loadTemplate('basic')">Fluxo Básico</button>
+            <button type="button" (click)="loadTemplate('decision')">Fluxo com Decisão</button>
+            <button type="button" (click)="loadTemplate('architecture')">Arquitetura de Serviços</button>
+          </div>
+        </div>
+
+        @if (hasSelection()) {
+          <button type="button" class="btn-tool btn-tool--danger" (click)="deleteSelected()" title="Excluir item selecionado">
+            <i class="fa-solid fa-trash"></i> Excluir
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- ─── Área do Canvas (Grid em Branco Interativo) ─── -->
+    <div class="canvas-viewport" (click)="deselectAll()">
+      <svg #canvasSvg class="canvas-svg-layer" width="2400" height="1600">
+        <defs>
+          <marker id="editor-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#3b82f6"/>
+          </marker>
+          <marker id="editor-arrow-selected" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#2563eb"/>
+          </marker>
+        </defs>
+
+        <!-- Desenhar Linhas / Arestas -->
+        @for (edge of edges(); track edge.id) {
+          <g class="svg-edge-group" [class.selected]="selectedEdgeId() === edge.id" (click)="selectEdge(edge.id, $event)">
+            <!-- Caminho visível -->
+            <path
+              [attr.d]="getEdgePath(edge)"
+              class="edge-path"
+              [attr.marker-end]="selectedEdgeId() === edge.id ? 'url(#editor-arrow-selected)' : 'url(#editor-arrow)'"
+            />
+            <!-- Caminho largo invisível para facilitar o clique -->
+            <path [attr.d]="getEdgePath(edge)" class="edge-hitbox" />
+
+            <!-- Rótulo da conexão -->
+            @let mid = getEdgeMidpoint(edge);
+            @if (edge.label) {
+              <g class="edge-label-group" [attr.transform]="'translate(' + mid.x + ',' + mid.y + ')'" (dblclick)="editEdgeLabel(edge, $event)">
+                <rect x="-30" y="-10" width="60" height="20" rx="4" class="edge-label-bg"/>
+                <text x="0" y="4" text-anchor="middle" class="edge-label-text">{{ edge.label }}</text>
+              </g>
+            } @else {
+              <!-- Botão sutil de adicionar rótulo ao passar o mouse -->
+              <g class="edge-add-label-btn" [attr.transform]="'translate(' + mid.x + ',' + mid.y + ')'" (click)="editEdgeLabel(edge, $event)">
+                <circle r="8" class="add-label-circle"/>
+                <text x="0" y="3" text-anchor="middle" class="add-label-plus">+</text>
+              </g>
+            }
+          </g>
+        }
+      </svg>
+
+      <!-- Nós HTML Interativos posicionados no Canvas -->
+      @for (node of nodes(); track node.id) {
+        <div
+          class="canvas-node"
+          [class.selected]="selectedNodeId() === node.id"
+          [class.connecting-source]="connectingSourceId() === node.id"
+          [attr.data-type]="node.type"
+          [attr.data-variant]="node.colorVariant || 'default'"
+          [style.left.px]="node.x"
+          [style.top.px]="node.y"
+          [style.width.px]="node.width"
+          [style.height.px]="node.height"
+          (mousedown)="onNodeMouseDown(node, $event)"
+          (click)="selectNode(node.id, $event)"
+          (dblclick)="editNodeLabel(node, $event)"
+        >
+          <!-- Ícone do tipo -->
+          @if (node.type === 'terminal') {
+            <i class="node-icon fa-solid fa-circle-play"></i>
+          } @else if (node.type === 'decision') {
+            <i class="node-icon fa-solid fa-diamond"></i>
+          } @else if (node.type === 'database') {
+            <i class="node-icon fa-solid fa-database"></i>
+          }
+
+          <span class="node-label">{{ node.label }}</span>
+
+          <!-- Botão rápido de renomear -->
+          <button type="button" class="node-edit-btn" (click)="editNodeLabel(node, $event)" title="Editar texto">
+            <i class="fa-solid fa-pen"></i>
+          </button>
+        </div>
+      }
+    </div>
+
+    <!-- ─── Modal / Popover de Edição de Texto ─── -->
+    @if (editingItem()) {
+      <div class="edit-popover-backdrop" (click)="cancelEditingItem()">
+        <div class="edit-popover" (click)="$event.stopPropagation()">
+          <h4>{{ editingItem()?.type === 'node' ? 'Editar Rótulo do Nó' : 'Editar Rótulo da Conexão' }}</h4>
+          <input
+            type="text"
+            class="edit-input"
+            [(ngModel)]="editingItem()!.label"
+            placeholder="Digite o texto..."
+            (keydown.enter)="saveEditingItem()"
+            (keydown.escape)="cancelEditingItem()"
+            autofocus
+          />
+          <div class="popover-actions">
+            <button type="button" class="btn-subtle" (click)="cancelEditingItem()">Cancelar</button>
+            <button type="button" class="btn-primary-sm" (click)="saveEditingItem()">Salvar</button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- ─── Rodapé do Modal ─── -->
+    <footer class="modal-footer">
+      <div class="footer-stats">
+        <span><i class="fa-solid fa-cubes me-1"></i> {{ nodes().length }} nós</span>
+        <span class="ms-3"><i class="fa-solid fa-arrows-split-up-and-left me-1"></i> {{ edges().length }} conexões</span>
+      </div>
+
+      <div class="footer-actions">
+        <button type="button" class="fc-btn-action fc-btn-action--ghost" (click)="onCancel()">
+          Cancelar
+        </button>
+        <button type="button" class="fc-btn-action fc-btn-action--primary" (click)="onSave()">
+          <i class="fa-solid fa-check me-1"></i> Concluir e Inserir
+        </button>
+      </div>
+    </footer>
+  </div>
+</div>

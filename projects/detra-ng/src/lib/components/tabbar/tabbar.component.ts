@@ -1,14 +1,18 @@
 import {
   AfterContentInit,
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
   ContentChildren,
   EventEmitter,
+  inject,
   Input,
+  OnDestroy,
   Output,
   QueryList,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Subscription } from 'rxjs';
 import { TabComponent } from './tab.component';
 
 /**
@@ -114,7 +118,10 @@ import { TabComponent } from './tab.component';
     </div>
   `,
 })
-export class TabbarComponent implements AfterContentInit {
+export class TabbarComponent implements AfterContentInit, OnDestroy {
+  private readonly cdr = inject(ChangeDetectorRef);
+  private tabsSub?: Subscription;
+
   @Input() activeTab = '';
   @Output() activeTabChange = new EventEmitter<string>();
   @ContentChildren(TabComponent) tabs!: QueryList<TabComponent>;
@@ -144,6 +151,17 @@ export class TabbarComponent implements AfterContentInit {
     if (!this.activeTab && this.tabs.length > 0) {
       this.activeTab = this.tabs.first.id;
     }
+    this.tabsSub = this.tabs.changes.subscribe(() => {
+      this.cdr.markForCheck();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.tabsSub?.unsubscribe();
+  }
+
+  markForCheck(): void {
+    this.cdr.markForCheck();
   }
 
   selectTab(id: string): void {

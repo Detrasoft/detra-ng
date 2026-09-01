@@ -925,3 +925,94 @@
   border-top: 2px solid #000;
   margin: 16px 0;
 }
+
+/* ── Bloco de Fluxograma dentro do HTML Editor ── */
+:host ::ng-deep .editor-area .detra-flowchart-block,
+.editor-area .detra-flowchart-block {
+  position: relative;
+  display: block;
+  margin: var(--space-4, 16px) auto;
+  padding: var(--space-3, 12px);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  user-select: none;
+  overflow: hidden;
+}
+
+:host ::ng-deep .editor-area .detra-flowchart-block:hover,
+.editor-area .detra-flowchart-block:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 8px 16px -2px rgba(59, 130, 246, 0.12);
+}
+
+:host ::ng-deep .editor-area .detra-flowchart-overlay,
+.editor-area .detra-flowchart-overlay {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 10;
+}
+
+:host ::ng-deep .editor-area .detra-flowchart-block:hover .detra-flowchart-overlay,
+.editor-area .detra-flowchart-block:hover .detra-flowchart-overlay {
+  opacity: 1;
+}
+
+:host ::ng-deep .editor-area .btn-edit-flowchart,
+.editor-area .btn-edit-flowchart {
+  background: #3b82f6;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+:host ::ng-deep .editor-area .btn-edit-flowchart:hover,
+.editor-area .btn-edit-flowchart:hover {
+  background: #2563eb;
+}
+
+:host ::ng-deep .editor-area .btn-remove-flowchart,
+.editor-area .btn-remove-flowchart {
+  background: #ef4444;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+:host ::ng-deep .editor-area .btn-remove-flowchart:hover,
+.editor-area .btn-remove-flowchart:hover {
+  background: #dc2626;
+}
+
+:host ::ng-deep .editor-area .detra-flowchart-svg-wrap,
+.editor-area .detra-flowchart-svg-wrap {
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+  padding: 10px 0;
+}
+
+:host ::ng-deep .editor-area .detra-flowchart-svg-wrap svg,
+.editor-area .detra-flowchart-svg-wrap svg {
+  max-width: 100%;
+  height: auto;
+}

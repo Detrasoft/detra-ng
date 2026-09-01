@@ -1,7 +1,6 @@
 {
   "name": "@detrasoft.com/detra-ng",
-  "version": "0.6.15",
-
+  "version": "0.6.17",
   "description": "DetraSoft Angular Design System — standalone components com CSS puro para Angular 17-20",
   "keywords": [
     "angular",
@@ -45,7 +44,6 @@
     "sync:task-ui": "npm run build && rm -rf ../task-ui/node_modules/@detrasoft.com/detra-ng && cp -r dist/detra-ng ../task-ui/node_modules/@detrasoft.com/detra-ng",
     "pack": "npm pack"
   },
-
   "peerDependencies": {
     "@angular/animations": ">=17.0.0 <21.0.0",
     "@angular/cdk": ">=17.0.0 <21.0.0",

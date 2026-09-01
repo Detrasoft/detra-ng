@@ -10,11 +10,16 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR, FormsModule } from '@angular/forms';
+import {
+  FlowchartEditorComponent,
+  FlowchartData,
+  FlowchartResult,
+} from '../flowchart-editor/flowchart-editor.component';
 
 @Component({
   selector: 'ds-html-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FlowchartEditorComponent],
   template: `
     <div
       class="ds-html-editor-wrapper"
@@ -265,6 +270,17 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR, FormsModule } from '@angular/f
               <i class="fa-solid fa-image"></i>
             </button>
 
+            <!-- Botão de Fluxograma / Diagrama Visual -->
+            <button
+              type="button"
+              class="toolbar-btn toolbar-btn--flowchart"
+              (mousedown)="$event.preventDefault()"
+              (click)="openFlowchartEditor()"
+              title="Desenhar Fluxograma / Diagrama"
+            >
+              <i class="fa-solid fa-diagram-project"></i>
+            </button>
+
             <div class="table-picker-wrapper">
               <button
                 type="button"
@@ -505,6 +521,14 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR, FormsModule } from '@angular/f
           style="display: none"
           (change)="onImageSelected($event)"
         />
+
+        <!-- Modal do Desenhador de Fluxogramas -->
+        <ds-flowchart-editor
+          *ngIf="showFlowchartModal"
+          [initialData]="currentFlowchartData"
+          (save)="onFlowchartSave($event)"
+          (cancel)="onFlowchartCancel()"
+        ></ds-flowchart-editor>
       </div>
     </div>
   `,
@@ -540,6 +564,11 @@ export class HtmlEditorComponent implements AfterViewInit, ControlValueAccessor 
   hoverCol = 1;
   activeTable: HTMLTableElement | null = null;
   savedRange: Range | null = null;
+
+  // Controle de Fluxograma (Flowchart Designer)
+  showFlowchartModal = false;
+  currentFlowchartData: FlowchartData | null = null;
+  private editingFlowchartTarget: HTMLElement | null = null;
 
   tableTrashTop = 0;
   tableTrashLeft = 0;
@@ -1232,12 +1261,96 @@ export class HtmlEditorComponent implements AfterViewInit, ControlValueAccessor 
 
   onEditorClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
+
+    // Ações do Fluxograma (Flowchart Block)
+    const editBtn = target.closest('.btn-edit-flowchart');
+    if (editBtn) {
+      event.preventDefault();
+      event.stopPropagation();
+      const block = editBtn.closest('.detra-flowchart-block') as HTMLElement;
+      if (block) this.openFlowchartEditorFromBlock(block);
+      return;
+    }
+
+    const removeBtn = target.closest('.btn-remove-flowchart');
+    if (removeBtn) {
+      event.preventDefault();
+      event.stopPropagation();
+      const block = removeBtn.closest('.detra-flowchart-block') as HTMLElement;
+      if (block) {
+        block.remove();
+        this.syncEditorContent();
+      }
+      return;
+    }
+
+    const flowchartBlock = target.closest('.detra-flowchart-block') as HTMLElement;
+    if (flowchartBlock && event.detail === 2) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.openFlowchartEditorFromBlock(flowchartBlock);
+      return;
+    }
+
     if (target.tagName === 'IMG') {
       this.activeImage = target as HTMLImageElement;
       this.updateImageOverlayPosition();
     } else {
       this.activeImage = null;
     }
+  }
+
+  // ─────────────── Métodos de Fluxograma (Flowchart Designer) ───────────────
+
+  openFlowchartEditor(existingData?: FlowchartData | null, targetElement?: HTMLElement | null): void {
+    this.currentFlowchartData = existingData || null;
+    this.editingFlowchartTarget = targetElement || null;
+    this.showFlowchartModal = true;
+  }
+
+  openFlowchartEditorFromBlock(block: HTMLElement): void {
+    const jsonStr = block.getAttribute('data-flowchart-json');
+    let data: FlowchartData | null = null;
+    if (jsonStr) {
+      try {
+        data = JSON.parse(decodeURIComponent(jsonStr));
+      } catch (e) {}
+    }
+    this.openFlowchartEditor(data, block);
+  }
+
+  onFlowchartSave(result: FlowchartResult): void {
+    this.showFlowchartModal = false;
+    const encodedData = encodeURIComponent(JSON.stringify(result.data));
+
+    const blockHtml = `
+      <div class="detra-flowchart-block" contenteditable="false" data-flowchart-json="${encodedData}">
+        <div class="detra-flowchart-overlay">
+          <button type="button" class="btn-edit-flowchart" title="Editar Fluxograma">
+            <i class="fa-solid fa-pen-to-square"></i> Editar Fluxograma
+          </button>
+          <button type="button" class="btn-remove-flowchart" title="Remover">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+        <div class="detra-flowchart-svg-wrap">
+          ${result.svg}
+        </div>
+      </div>
+    `;
+
+    if (this.editingFlowchartTarget) {
+      this.editingFlowchartTarget.outerHTML = blockHtml;
+      this.editingFlowchartTarget = null;
+    } else {
+      this.insertHtml(blockHtml);
+    }
+    this.syncEditorContent();
+  }
+
+  onFlowchartCancel(): void {
+    this.showFlowchartModal = false;
+    this.editingFlowchartTarget = null;
   }
 
   updateImageOverlayPosition(): void {

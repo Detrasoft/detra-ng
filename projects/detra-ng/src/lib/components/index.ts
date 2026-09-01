@@ -56,6 +56,15 @@ export { SearchModalComponent } from './search-modal/search-modal.component';
 
 // Rich editor
 export { HtmlEditorComponent } from './html-editor/html-editor.component';
+export { MdEditorComponent } from './md-editor/md-editor.component';
+export {
+  FlowchartEditorComponent,
+  type FlowchartData,
+  type FlowchartNode,
+  type FlowchartEdge,
+  type FlowchartNodeType,
+  type FlowchartResult,
+} from './flowchart-editor/flowchart-editor.component';
 
 // Media & Image Crop
 export { ImageCropComponent } from './image-crop/image-crop.component';
@@ -64,3 +73,17 @@ export type {
   ImageCropShape,
   ImageCropOutputFormat,
 } from './image-crop/image-crop.types';
+
+// Calendar
+export { CalendarComponent } from './calendar/calendar.component';
+export type {
+  CalendarEvent,
+  CalendarView,
+  CalendarLocale,
+  EventDropPayload,
+  EventResizePayload,
+} from './calendar/calendar.component';
+export {
+  CALENDAR_LOCALE_PT_BR,
+  CALENDAR_LOCALE_EN,
+} from './calendar/calendar.component';
