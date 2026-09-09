@@ -364,10 +364,31 @@ export class SearchModalComponent implements ControlValueAccessor, OnInit, OnDes
     this.cdr.markForCheck();
   }
 
+  private resolveDisplayValue(item: any): string {
+    if (!item) return '';
+    if (this.principalColumn) {
+      const val = this.getFieldValue(item, this.principalColumn.field);
+      if (val) return val;
+    }
+    const fallback =
+      item.name ||
+      item.title ||
+      item.description ||
+      item.label ||
+      (typeof item.viewName === 'object'
+        ? item.viewName?.['pt'] || Object.values(item.viewName)[0]
+        : item.viewName) ||
+      '';
+    return fallback ? String(fallback) : '';
+  }
+
   private applyDisplayValue(): void {
     if (!this.selectedValue) return;
-    if (this.principalColumn) {
-      this.displayValue = this.getFieldValue(this.selectedValue, this.principalColumn.field);
+    const resolved = this.resolveDisplayValue(this.selectedValue);
+    if (resolved) {
+      this.displayValue = resolved;
+    } else if (!this.displayValue) {
+      this.displayValue = typeof this.selectedValue === 'string' ? this.selectedValue : '';
     }
   }
 
@@ -639,9 +660,8 @@ export class SearchModalComponent implements ControlValueAccessor, OnInit, OnDes
     }
 
     this.selectedValue = item;
-    this.displayValue = this.principalColumn
-      ? this.getFieldValue(item, this.principalColumn.field)
-      : JSON.stringify(item);
+    const resolved = this.resolveDisplayValue(item);
+    this.displayValue = resolved || JSON.stringify(item);
 
     this.onChangeFn(item);
     this.onSelect.emit(item);
@@ -802,6 +822,12 @@ export class SearchModalComponent implements ControlValueAccessor, OnInit, OnDes
       if (value == null) return '';
       value = value[key];
     }
+    if (value && typeof value === 'object') {
+      const localized = value['pt'] || Object.values(value)[0];
+      if (localized != null && typeof localized === 'string') {
+        return localized;
+      }
+    }
     return value != null ? String(value) : '';
   }
 
@@ -813,10 +839,8 @@ export class SearchModalComponent implements ControlValueAccessor, OnInit, OnDes
   }
 
   getChipLabel(item: any): string {
-    if (this.principalColumn) {
-      return this.getFieldValue(item, this.principalColumn.field);
-    }
-    return JSON.stringify(item);
+    const resolved = this.resolveDisplayValue(item);
+    return resolved || JSON.stringify(item);
   }
 
   trackByRow(index: number, row: SearchRow): unknown {
@@ -856,7 +880,7 @@ export class SearchModalComponent implements ControlValueAccessor, OnInit, OnDes
 
   private buildRow(item: any, regex: RegExp | null): SearchRow {
     const key = item?.[this.keyFieldName] ?? null;
-    const principalRaw = this.getFieldValue(item, this.principalColumn?.field);
+    const principalRaw = this.resolveDisplayValue(item);
     return {
       raw: item,
       key,

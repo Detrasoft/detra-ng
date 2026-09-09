@@ -17,8 +17,12 @@ import {
   NgZone,
   inject,
   ChangeDetectorRef,
+  HostListener,
+  ViewContainerRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Overlay, OverlayModule, OverlayRef } from '@angular/cdk/overlay';
+import { TemplatePortal } from '@angular/cdk/portal';
 import { Subscription } from 'rxjs';
 import { ListColumnDirective } from './list-column.directive';
 
@@ -26,13 +30,146 @@ import { ListColumnDirective } from './list-column.directive';
   selector: 'ds-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule],
+  imports: [CommonModule, OverlayModule],
   styleUrl: './list.component.css',
   template: `
     <!-- ═══════════════════════════════════════════
-         DESKTOP TABLE VIEW + PAGINATION
+         TOOLBAR / ACTIONS HEADER
          ═══════════════════════════════════════════ -->
-    <div class="ds-list__table-container" data-testid="ds-list-table">
+    <div
+      *ngIf="listTitle || maximizable || showToolbar"
+      class="ds-list__toolbar"
+    >
+      <div #inlineTitleSlot class="ds-list__toolbar-left">
+        <div class="ds-list__toolbar-title" *ngIf="listTitle">
+          <span class="ds-list__toolbar-title-text">{{ listTitle }}</span>
+          <small *ngIf="listSubtitle" class="ds-list__toolbar-subtitle">{{ listSubtitle }}</small>
+        </div>
+        <div #projectedTitleSlot class="ds-list__projected-title">
+          <ng-content select="[list-title]"></ng-content>
+        </div>
+      </div>
+
+      <div #inlineActionsSlot class="ds-list__toolbar-actions">
+        <div #projectedActionsSlot class="ds-list__projected-actions">
+          <ng-content select="[list-actions]"></ng-content>
+        </div>
+
+        <button
+          *ngIf="maximizable"
+          #inlineMaximizeBtn
+          type="button"
+          class="ds-list__btn-maximize"
+          (click)="toggleMaximize()"
+          [attr.aria-label]="isMaximized ? 'Restaurar tamanho' : 'Maximizar tela'"
+          [title]="isMaximized ? 'Restaurar tamanho' : 'Maximizar tela'"
+        >
+          <i *ngIf="!isMaximized" class="fa-solid fa-expand"></i>
+          <i *ngIf="isMaximized" class="fa-solid fa-compress"></i>
+          <span class="ds-list__btn-maximize-text">{{ isMaximized ? 'Restaurar' : 'Maximizar' }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         INLINE TABLE (when not maximized)
+         ═══════════════════════════════════════════ -->
+    <div class="ds-list__inline-view" [style.display]="isMaximized ? 'none' : 'block'">
+      <ng-container *ngTemplateOutlet="tableContentTemplate"></ng-container>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         INLINE PLACEHOLDER (when maximized)
+         ═══════════════════════════════════════════ -->
+    <div *ngIf="isMaximized" class="ds-list__placeholder">
+      <div class="ds-list__placeholder-content">
+        <div class="ds-list__placeholder-icon">
+          <i class="fa-solid fa-expand"></i>
+        </div>
+        <div class="ds-list__placeholder-text">
+          <span class="ds-list__placeholder-title">Tabela aberta em tela cheia</span>
+          <span class="ds-list__placeholder-subtitle">A visualização em modal está ativa.</span>
+        </div>
+        <button
+          type="button"
+          class="ds-list__btn-maximize"
+          (click)="toggleMaximize()"
+          title="Restaurar tamanho original"
+        >
+          <i class="fa-solid fa-compress"></i>
+          <span>Restaurar</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         MODAL TEMPLATE (Rendered via CDK Overlay)
+         ═══════════════════════════════════════════ -->
+    <ng-template #modalTemplate>
+      <div class="ds-list-modal__backdrop" (click)="closeMaximize()">
+        <div
+          class="ds-list-modal__card"
+          (click)="$event.stopPropagation()"
+          role="dialog"
+          aria-modal="true"
+          [attr.aria-label]="listTitle || 'Tabela em tela cheia'"
+        >
+          <!-- Header do Modal -->
+          <div class="ds-list-modal__header">
+            <div class="ds-list-modal__header-left">
+              <div class="ds-list-modal__title-group" *ngIf="listTitle">
+                <h3 class="ds-list-modal__title">
+                  <i class="fa-solid fa-table-list"></i>
+                  {{ listTitle }}
+                </h3>
+                <p *ngIf="listSubtitle" class="ds-list-modal__subtitle">{{ listSubtitle }}</p>
+              </div>
+              <div class="ds-list-modal__title-slot"></div>
+            </div>
+
+            <div class="ds-list-modal__header-actions">
+              <!-- Slot onde os botões projetados (CSV, Excel) são inseridos -->
+              <div class="ds-list-modal__actions-slot"></div>
+
+              <button
+                type="button"
+                class="ds-list__btn-maximize ds-list__btn-maximize--restore"
+                (click)="closeMaximize()"
+                title="Restaurar tamanho (Esc)"
+                aria-label="Restaurar tamanho"
+              >
+                <i class="fa-solid fa-compress"></i>
+                <span class="ds-list__btn-maximize-text">Restaurar</span>
+              </button>
+
+              <button
+                type="button"
+                class="ds-list-modal__btn-close"
+                (click)="closeMaximize()"
+                title="Fechar modal (Esc)"
+                aria-label="Fechar"
+              >
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Corpo do Modal com a tabela e paginação -->
+          <div class="ds-list-modal__body">
+            <ng-container *ngTemplateOutlet="tableContentTemplate"></ng-container>
+          </div>
+        </div>
+      </div>
+    </ng-template>
+
+    <!-- ═══════════════════════════════════════════
+         SHARED TABLE + CARDS TEMPLATE
+         ═══════════════════════════════════════════ -->
+    <ng-template #tableContentTemplate>
+      <!-- ═══════════════════════════════════════════
+           DESKTOP TABLE VIEW + PAGINATION
+           ═══════════════════════════════════════════ -->
+      <div class="ds-list__table-container" data-testid="ds-list-table">
       <table class="ds-list__table" [class.ds-list__table--resizable]="resizableColumns">
         <thead>
           <tr>
@@ -376,11 +513,23 @@ import { ListColumnDirective } from './list-column.directive';
         {{ emptyMessage }}
       </div>
     </div>
+  </ng-template>
   `,
 })
 export class ListComponent implements OnChanges, AfterViewInit, OnDestroy {
   private readonly ngZone = inject(NgZone);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly overlay = inject(Overlay);
+  private readonly vcr = inject(ViewContainerRef);
+  private overlayRef: OverlayRef | null = null;
+
+  @ViewChild('modalTemplate') private modalTemplate?: TemplateRef<unknown>;
+  @ViewChild('tableContentTemplate') private tableContentTemplate?: TemplateRef<unknown>;
+  @ViewChild('inlineTitleSlot') private inlineTitleSlot?: ElementRef<HTMLElement>;
+  @ViewChild('projectedTitleSlot') private projectedTitleSlot?: ElementRef<HTMLElement>;
+  @ViewChild('inlineActionsSlot') private inlineActionsSlot?: ElementRef<HTMLElement>;
+  @ViewChild('projectedActionsSlot') private projectedActionsSlot?: ElementRef<HTMLElement>;
+  @ViewChild('inlineMaximizeBtn') private inlineMaximizeBtn?: ElementRef<HTMLElement>;
 
   // ── Inputs ──
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -403,11 +552,33 @@ export class ListComponent implements OnChanges, AfterViewInit, OnDestroy {
   @Input() sortKey?: string;
   @Input() sortOrder: 'asc' | 'desc' = 'asc';
 
+  // Maximizable & Toolbar inputs
+  @Input() maximizable = false;
+  @Input() listTitle?: string;
+  @Input() listSubtitle?: string;
+  @Input() showToolbar = false;
+
+  private _isMaximized = false;
+  @Input()
+  get isMaximized(): boolean {
+    return this._isMaximized;
+  }
+  set isMaximized(val: boolean) {
+    if (this._isMaximized !== val) {
+      if (val) {
+        this.openMaximize();
+      } else {
+        this.closeMaximize();
+      }
+    }
+  }
+
   // ── Outputs ──
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   @Output() rowClick = new EventEmitter<any>();
   @Output() pageChange = new EventEmitter<number>();
   @Output() sortChange = new EventEmitter<{ key: string; order: 'asc' | 'desc' }>();
+  @Output() maximizeChange = new EventEmitter<boolean>();
 
   // ── Content projection ──
   @ContentChildren(ListColumnDirective) columns!: QueryList<ListColumnDirective>;
@@ -459,8 +630,101 @@ export class ListComponent implements OnChanges, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.closeMaximize();
     this.columnsSub?.unsubscribe();
     this.disconnectObserver();
+  }
+
+  // ── Maximize / Fullscreen logic (CDK Overlay Modal) ──
+
+  toggleMaximize(): void {
+    if (this._isMaximized) {
+      this.closeMaximize();
+    } else {
+      this.openMaximize();
+    }
+  }
+
+  openMaximize(): void {
+    if (this._isMaximized || !this.maximizable) return;
+
+    if (!this.modalTemplate) {
+      setTimeout(() => this.openMaximize(), 0);
+      return;
+    }
+
+    const positionStrategy = this.overlay
+      .position()
+      .global()
+      .centerHorizontally()
+      .centerVertically();
+
+    this.overlayRef = this.overlay.create({
+      positionStrategy,
+      scrollStrategy: this.overlay.scrollStrategies.block(),
+      hasBackdrop: false,
+      disposeOnNavigation: true,
+      panelClass: 'ds-list-modal-overlay-pane',
+    });
+
+    const portal = new TemplatePortal(this.modalTemplate, this.vcr);
+    this.overlayRef.attach(portal);
+
+    this._isMaximized = true;
+    this.maximizeChange.emit(true);
+    this.cdr.markForCheck();
+
+    // Mover os botões projetados (CSV, Excel, etc.) para o header do modal
+    setTimeout(() => {
+      if (this.overlayRef) {
+        const overlayEl = this.overlayRef.overlayElement;
+        const modalActionsSlot = overlayEl.querySelector('.ds-list-modal__actions-slot');
+        const modalTitleSlot = overlayEl.querySelector('.ds-list-modal__title-slot');
+
+        if (modalActionsSlot && this.projectedActionsSlot?.nativeElement) {
+          modalActionsSlot.appendChild(this.projectedActionsSlot.nativeElement);
+        }
+        if (modalTitleSlot && this.projectedTitleSlot?.nativeElement) {
+          modalTitleSlot.appendChild(this.projectedTitleSlot.nativeElement);
+        }
+      }
+    }, 0);
+  }
+
+  closeMaximize(): void {
+    if (!this._isMaximized && !this.overlayRef) return;
+
+    // Restaurar os botões projetados para a toolbar inline
+    if (this.projectedActionsSlot?.nativeElement && this.inlineActionsSlot?.nativeElement) {
+      if (this.inlineMaximizeBtn?.nativeElement) {
+        this.inlineActionsSlot.nativeElement.insertBefore(
+          this.projectedActionsSlot.nativeElement,
+          this.inlineMaximizeBtn.nativeElement,
+        );
+      } else {
+        this.inlineActionsSlot.nativeElement.appendChild(this.projectedActionsSlot.nativeElement);
+      }
+    }
+    if (this.projectedTitleSlot?.nativeElement && this.inlineTitleSlot?.nativeElement) {
+      this.inlineTitleSlot.nativeElement.appendChild(this.projectedTitleSlot.nativeElement);
+    }
+
+    if (this.overlayRef) {
+      this.overlayRef.dispose();
+      this.overlayRef = null;
+    }
+
+    this._isMaximized = false;
+    this.maximizeChange.emit(false);
+    this.cdr.markForCheck();
+  }
+
+  @HostListener('document:keydown.escape', ['$event'])
+  onEscapeKey(event: KeyboardEvent): void {
+    if (this._isMaximized) {
+      event.preventDefault();
+      this.closeMaximize();
+    }
   }
 
   // ── Computed getters ──
@@ -700,7 +964,7 @@ export class ListComponent implements OnChanges, AfterViewInit, OnDestroy {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onRowClick(event: MouseEvent, row: any): void {
     const target = event.target as HTMLElement;
-    if (target.closest('button, a, input, select, textarea, [role="button"], .row-actions, app-task-timesheet-control')) {
+    if (target.closest('button, a, input, select, textarea, [role="button"], .row-actions, .ds-list__actions-td, .ds-list__actions-wrapper, .ds-list__actions, .ds-list__card-actions')) {
       return;
     }
     this.rowClick.emit(row);
