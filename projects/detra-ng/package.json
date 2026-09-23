@@ -1,6 +1,6 @@
 {
   "name": "@detrasoft.com/detra-ng",
-  "version": "0.6.22",
+  "version": "0.6.23",
   "description": "DetraSoft Angular standalone components (forms, pickers, dialogs, toasts, search).",
   "sideEffects": false,
   "peerDependencies": {
@@ -15,7 +15,8 @@
     "zone.js": ">=0.13.0"
   },
   "dependencies": {
-    "tslib": "^2.6.0"
+    "tslib": "^2.6.0",
+    "marked": "^18.0.11"
   },
   "exports": {
     "./base/*": "./base/*",

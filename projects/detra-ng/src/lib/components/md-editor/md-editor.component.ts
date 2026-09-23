@@ -1090,7 +1090,9 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
       '<div class="md-check-item"><input type="checkbox"> <span>$1</span></div>'
     );
 
-    // 9. Listas simples
+    // 9. Listas simples e ordenadas
+    html = html.replace(/^\d+\.\s+(.+)$/gm, '<li class="md-ol-item">$1</li>');
+    html = html.replace(/((?:<li class="md-ol-item">.+<\/li>\n?)+)/g, '<ol>$1</ol>');
     html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
     html = html.replace(/((?:<li>.+<\/li>\n?)+)/g, '<ul>$1</ul>');
 
@@ -1100,7 +1102,7 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
       '<a href="$2" target="_blank" rel="noopener">$1</a>'
     );
 
-    // 11. Tabelas simples
+    // 11. Tabelas
     html = this.parseMarkdownTables(html);
 
     // 12. Parágrafos
@@ -1108,6 +1110,15 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
     html = `<p>${html}</p>`;
     html = html.replace(/([^>])\n([^<])/g, '$1<br>$2');
     html = html.replace(/<p>\s*<\/p>/g, '');
+
+    // Limpar parágrafos que envolvam elementos de bloco nativos
+    html = html.replace(/<p>\s*(?:<br\s*\/?>)*\s*(<table[\s\S]*?<\/table>)\s*(?:<br\s*\/?>)*\s*<\/p>/gi, '$1');
+    html = html.replace(/<p>\s*(?:<br\s*\/?>)*\s*(<div class="md-check-item"[\s\S]*?<\/div>)\s*(?:<br\s*\/?>)*\s*<\/p>/gi, '$1');
+    html = html.replace(/<p>\s*(?:<br\s*\/?>)*\s*(<ul[\s\S]*?<\/ul>)\s*(?:<br\s*\/?>)*\s*<\/p>/gi, '$1');
+    html = html.replace(/<p>\s*(?:<br\s*\/?>)*\s*(<ol[\s\S]*?<\/ol>)\s*(?:<br\s*\/?>)*\s*<\/p>/gi, '$1');
+    html = html.replace(/<p>\s*(?:<br\s*\/?>)*\s*(<blockquote[\s\S]*?<\/blockquote>)\s*(?:<br\s*\/?>)*\s*<\/p>/gi, '$1');
+    html = html.replace(/<p>\s*(?:<br\s*\/?>)*\s*(<h[1-6]>[\s\S]*?<\/h[1-6]>)\s*(?:<br\s*\/?>)*\s*<\/p>/gi, '$1');
+    html = html.replace(/<p>\s*(?:<br\s*\/?>)*\s*(<hr>)\s*(?:<br\s*\/?>)*\s*<\/p>/gi, '$1');
 
     // 13. Limpar tags de parágrafo que envelopem placeholders de blocos de código
     html = html.replace(/<p>\s*(?:<br>)*\s*%%CODE_BLOCK_(\d+)%%\s*(?:<br>)*\s*<\/p>/g, '%%CODE_BLOCK_$1%%');
@@ -1214,9 +1225,14 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
           const checkbox = li.querySelector('input[type="checkbox"]') as HTMLInputElement;
           if (checkbox) {
             const checked = checkbox.checked ? 'x' : ' ';
-            const clone = li.cloneNode(true) as HTMLElement;
-            clone.querySelector('input[type="checkbox"]')?.remove();
-            listStr += `- [${checked}] ${this.nodeToMarkdown(clone).trim()}\n`;
+            let itemText = '';
+            li.childNodes.forEach((child) => {
+              if (child.nodeType === Node.ELEMENT_NODE && (child as HTMLElement).tagName.toLowerCase() === 'input') {
+                return;
+              }
+              itemText += this.nodeToMarkdown(child);
+            });
+            listStr += `- [${checked}] ${itemText.trim()}\n`;
           } else {
             listStr += `- ${this.nodeToMarkdown(li).trim()}\n`;
           }
@@ -1233,6 +1249,10 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
       }
       case 'table':
         return '\n\n' + this.tableToMarkdown(el) + '\n\n';
+      case 'th':
+      case 'td': {
+        return getChildrenMd().replace(/\n+/g, ' ').trim();
+      }
       case 'br':
         return '\n';
       case 'div': {
@@ -1244,9 +1264,14 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
         if (el.classList.contains('md-check-item')) {
           const checkbox = el.querySelector('input[type="checkbox"]') as HTMLInputElement;
           const checked = checkbox && checkbox.checked ? 'x' : ' ';
-          const clone = el.cloneNode(true) as HTMLElement;
-          clone.querySelector('input[type="checkbox"]')?.remove();
-          return `\n- [${checked}] ${this.nodeToMarkdown(clone).trim()}\n`;
+          let itemText = '';
+          el.childNodes.forEach((child) => {
+            if (child.nodeType === Node.ELEMENT_NODE && (child as HTMLElement).tagName.toLowerCase() === 'input') {
+              return;
+            }
+            itemText += this.nodeToMarkdown(child);
+          });
+          return `\n- [${checked}] ${itemText.trim()}\n`;
         }
         const text = getChildrenMd().trim();
         return text ? `\n\n${text}\n\n` : '';
@@ -1284,35 +1309,56 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
   }
 
   private parseMarkdownTables(content: string): string {
-    const tableRegex = /((?:\|.+?\|\n?)+)/g;
-    return content.replace(tableRegex, (match) => {
-      const lines = match.trim().split('\n').filter((l) => l.includes('|'));
-      if (lines.length < 2) return match;
+    // Captura blocos contínuos de linhas de tabela (cada linha contendo ao menos um '|')
+    const tableBlockRegex = /((?:^[ \t]*\|?[^\n\r]*\|[^\n\r]*(?:\r?\n|$))+)/gm;
 
-      let htmlTable = '<table class="editor-table"><tbody>';
-      let isHeader = true;
+    return content.replace(tableBlockRegex, (match) => {
+      const rawLines = match
+        .trim()
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter((l) => l.length > 0);
 
-      for (const line of lines) {
-        if (line.includes('---')) {
-          isHeader = false;
-          continue;
+      if (rawLines.length < 2) return match;
+
+      // A linha delimitadora deve conter '-', '|' e apenas caracteres válidos (-, :, |, espaços)
+      const sepIndex = rawLines.findIndex(
+        (l) => /^[:\s\-|]+$/.test(l) && l.includes('-') && l.includes('|')
+      );
+      if (sepIndex === -1) return match;
+
+      let theadHtml = '';
+      let tbodyHtml = '';
+
+      for (let i = 0; i < rawLines.length; i++) {
+        if (i === sepIndex) continue;
+
+        let line = rawLines[i];
+        if (line.startsWith('|')) line = line.substring(1);
+        if (line.endsWith('|')) line = line.substring(0, line.length - 1);
+
+        const cells = line.split('|').map((c) => c.trim());
+        const isHeader = i < sepIndex;
+        const tag = isHeader ? 'th' : 'td';
+
+        const rowHtml =
+          '<tr>' +
+          cells.map((c) => `<${tag}>${c || '&nbsp;'}</${tag}>`).join('') +
+          '</tr>';
+
+        if (isHeader) {
+          theadHtml += rowHtml;
+        } else {
+          tbodyHtml += rowHtml;
         }
-
-        const cells = line
-          .split('|')
-          .slice(1, -1)
-          .map((c) => c.trim());
-
-        htmlTable += '<tr>';
-        for (const cell of cells) {
-          const tag = isHeader ? 'th' : 'td';
-          htmlTable += `<${tag}>${cell}</${tag}>`;
-        }
-        htmlTable += '</tr>';
       }
 
-      htmlTable += '</tbody></table>';
-      return htmlTable;
+      let result = '\n\n<table class="editor-table">';
+      if (theadHtml) result += `<thead>${theadHtml}</thead>`;
+      if (tbodyHtml) result += `<tbody>${tbodyHtml}</tbody>`;
+      result += '</table>\n\n';
+
+      return result;
     });
   }
 

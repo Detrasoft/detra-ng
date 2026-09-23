@@ -1,6 +1,6 @@
 {
   "name": "@detrasoft.com/detra-ng",
-  "version": "0.6.22",
+  "version": "0.6.23",
   "description": "DetraSoft Angular Design System — standalone components com CSS puro para Angular 17-20",
   "keywords": [
     "angular",
@@ -55,6 +55,7 @@
     "zone.js": ">=0.13.0"
   },
   "dependencies": {
+    "marked": "^18.0.14",
     "tslib": "^2.6.0"
   },
   "devDependencies": {

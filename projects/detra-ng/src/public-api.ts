@@ -16,3 +16,7 @@ export * from './lib/search/search.tokens';
 
 // All components
 export * from './lib/components/index';
+
+// All pipes & text utilities
+export * from './lib/pipes/index';
+
