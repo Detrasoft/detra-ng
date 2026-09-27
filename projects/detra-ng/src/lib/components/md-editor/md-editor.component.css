@@ -32,7 +32,7 @@
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .editor-container:focus-within:not(.editor-container--disabled) {
@@ -51,13 +51,25 @@
 
 /* ── Toolbar ── */
 .editor-toolbar {
+  position: sticky;
+  top: var(--ds-md-toolbar-top, 0px);
+  z-index: 25;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-1, 4px);
   padding: var(--space-2, 6px) var(--space-3, 10px);
-  background: var(--surface-bg-hover, rgba(0, 0, 0, 0.02));
+  background: var(--color-surface-raised, #ffffff);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top-left-radius: 11px;
+  border-top-right-radius: 11px;
   border-bottom: 1px solid var(--color-glass-border, rgba(0, 0, 0, 0.08));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .toolbar-group {
@@ -180,8 +192,20 @@
   margin: var(--space-1, 4px) 0;
 }
 
-:host ::ng-deep .editor-area p {
-  margin: 0 0 var(--space-1, 4px);
+:host ::ng-deep .editor-area p,
+.editor-area p {
+  margin: 0 0 4px;
+  line-height: 1.5;
+}
+
+:host ::ng-deep .editor-area p:empty,
+.editor-area p:empty {
+  min-height: 1.5em;
+}
+
+:host ::ng-deep .editor-area p:last-child,
+.editor-area p:last-child {
+  margin-bottom: 0;
 }
 
 :host ::ng-deep .editor-area code,

@@ -6,7 +6,7 @@ pickers, listas, árvores, dialogs, toasts, search genérica e editor HTML
 sem dependências de UI de terceiros (Material, PrimeNG, etc.).
 
 > **Escopo:** `@detrasoft.com/detra-ng`
-> **Versão atual:** `0.6.24` — Angular 17 / 18 / 19 / 20 (peer-deps).
+> **Versão atual:** `0.6.25` — Angular 17 / 18 / 19 / 20 (peer-deps).
 
 ---
 

@@ -260,6 +260,7 @@ let nextId = 0;
           [attr.contenteditable]="!disabled"
           [attr.data-placeholder]="placeholder"
           [style.min-height]="minHeight"
+          (focus)="onEditorFocus()"
           (input)="onEditorInput()"
           (click)="onEditorClick($event)"
           (blur)="onEditorBlur()"
@@ -326,6 +327,9 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
     if (this.lastMarkdown && this.editorArea) {
       this.editorArea.nativeElement.innerHTML = this.markdownToHtml(this.lastMarkdown);
     }
+    try {
+      document.execCommand('defaultParagraphSeparator', false, 'p');
+    } catch (e) {}
   }
 
   // ─────────────── ControlValueAccessor ───────────────
@@ -363,6 +367,12 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
 
   onEditorBlur(): void {
     this.onTouched();
+  }
+
+  onEditorFocus(): void {
+    try {
+      document.execCommand('defaultParagraphSeparator', false, 'p');
+    } catch (e) {}
   }
 
   onEditorPaste(event: ClipboardEvent): void {
@@ -1010,6 +1020,9 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
   private focusEditor(): void {
     if (this.editorArea) {
       this.editorArea.nativeElement.focus();
+      try {
+        document.execCommand('defaultParagraphSeparator', false, 'p');
+      } catch (e) {}
     }
   }
 
@@ -1061,6 +1074,9 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
 
+    // Permitir <br> e <br/> explícitos no Markdown
+    html = html.replace(/&lt;br\s*\/?&gt;/gi, '<br>');
+
     // 4. Headers (de H6 até H1 em ordem decrescente de cerquilhas)
     html = html.replace(/^###### (.+)$/gm, '<h6>$1</h6>');
     html = html.replace(/^##### (.+)$/gm, '<h5>$1</h5>');
@@ -1105,10 +1121,28 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
     // 11. Tabelas
     html = this.parseMarkdownTables(html);
 
-    // 12. Parágrafos
-    html = html.replace(/\n\n+/g, '</p><p>');
+    // 12. Parágrafos e quebras de linha vazias
+    // Normalizar CRLF para LF
+    html = html.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+    // Cada sequência de 2 ou mais quebras de linha:
+    // \n\n (2) -> fecha e abre parágrafo: </p><p>
+    // \n\n\n (3) -> parágrafo + 1 linha vazia: </p><p><br></p><p>
+    // \n\n\n\n (4) -> parágrafo + 2 linhas vazias: </p><p><br></p><p><br></p><p>
+    html = html.replace(/\n{2,}/g, (match) => {
+      const extraEmptyCount = match.length - 2;
+      return '</p>' + '<p><br></p>'.repeat(extraEmptyCount) + '<p>';
+    });
+
     html = `<p>${html}</p>`;
+
+    // Quebra de linha simples remanescente (soft break dentro de parágrafo)
     html = html.replace(/([^>])\n([^<])/g, '$1<br>$2');
+
+    // Eliminar quebras de linha \n residuais entre tags HTML para evitar text nodes vazios no DOM
+    html = html.replace(/>\n+/g, '>').replace(/\n+</g, '<');
+
+    // Remover parágrafos totalmente vazios (sem <br>), preservando parágrafos de linha vazia <p><br></p>
     html = html.replace(/<p>\s*<\/p>/g, '');
 
     // Limpar parágrafos que envolvam elementos de bloco nativos
@@ -1134,18 +1168,145 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
   }
 
   /**
-   * Converte a árvore DOM do editor WYSIWYG de volta para Markdown limpo.
+   * Converte a árvore DOM do editor WYSIWYG de volta para Markdown limpo,
+   * preservando fielmente quebras de linha intencionais e linhas vazias.
    */
   htmlToMarkdown(container: HTMLElement): string {
-    let md = '';
+    const blocks: { type: 'content' | 'empty'; text: string; isList?: boolean }[] = [];
+    let currentInlineMd = '';
+
+    const flushInline = () => {
+      const trimmed = currentInlineMd.trim();
+      if (trimmed) {
+        const isList = trimmed.startsWith('- ') || trimmed.startsWith('* ') || /^\d+\.\s/.test(trimmed);
+        blocks.push({ type: 'content', text: trimmed, isList });
+      }
+      currentInlineMd = '';
+    };
+
     container.childNodes.forEach((node) => {
-      md += this.nodeToMarkdown(node);
+      // 1. Nós de texto puros: se for apenas whitespace entre tags (ex: quebra de linha de formatação HTML), ignorar
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = (node.textContent || '').replace(/\u00A0/g, ' ');
+        if (text.trim() === '') {
+          return;
+        }
+        currentInlineMd += text;
+        return;
+      }
+
+      // 2. Blocos vazios reais criados pelo Enter (<p><br></p>, <div><br></div>, <br>)
+      if (this.isEmptyBlock(node)) {
+        flushInline();
+        blocks.push({ type: 'empty', text: '' });
+      } else if (!this.isBlockElement(node)) {
+        // Nós inline raiz com conteúdo (strong, em, link, code, etc.)
+        currentInlineMd += this.nodeToMarkdown(node);
+      } else {
+        // Elementos estruturais de bloco
+        flushInline();
+        const md = this.nodeToMarkdown(node).trim();
+        if (md) {
+          const isList = md.startsWith('- ') || md.startsWith('* ') || /^\d+\.\s/.test(md);
+          blocks.push({ type: 'content', text: md, isList });
+        }
+      }
     });
 
-    // Limpeza de quebras e espaços em branco excessivos
-    return md
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
+    flushInline();
+
+    if (blocks.length === 0) {
+      return '';
+    }
+
+    let result = '';
+    let pendingEmptyLines = 0;
+
+    for (let i = 0; i < blocks.length; i++) {
+      const block = blocks[i];
+      if (block.type === 'empty') {
+        pendingEmptyLines++;
+      } else {
+        if (result.length > 0) {
+          const prevBlock = blocks.slice(0, i).reverse().find((b) => b.type === 'content');
+          const isConsecutiveList = pendingEmptyLines === 0 && block.isList && prevBlock?.isList;
+          if (isConsecutiveList) {
+            result += '\n';
+          } else {
+            // Separação entre blocos: 2 quebras padrão de parágrafo + 1 para cada linha vazia extra
+            const separatorCount = 2 + pendingEmptyLines;
+            result += '\n'.repeat(separatorCount);
+          }
+        }
+        result += block.text;
+        pendingEmptyLines = 0;
+      }
+    }
+
+    return result.trim();
+  }
+
+  private isEmptyBlock(node: Node): boolean {
+    // Nós de texto nunca são blocos vazios (são tratados como inline ou ruído inter-tags)
+    if (node.nodeType !== Node.ELEMENT_NODE) {
+      return false;
+    }
+
+    const el = node as HTMLElement;
+    const tag = el.tagName.toLowerCase();
+
+    if (tag === 'br') return true;
+
+    // Componentes interativos/estruturais especiais nunca são blocos vazios
+    if (
+      el.classList.contains('md-flowchart-card') ||
+      el.classList.contains('md-check-item') ||
+      el.classList.contains('editor-table')
+    ) {
+      return false;
+    }
+
+    if (tag === 'hr') return false;
+
+    // Elementos de bloco ou contêineres
+    if (
+      ['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li'].includes(tag)
+    ) {
+      if (
+        el.querySelector(
+          'table, img, input, pre, blockquote, hr, .md-flowchart-card, .md-check-item'
+        )
+      ) {
+        return false;
+      }
+      const text = (el.textContent || '').replace(/\u00A0/g, ' ').trim();
+      return text === '';
+    }
+
+    return false;
+  }
+
+  private isBlockElement(node: Node): boolean {
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const tag = (node as HTMLElement).tagName.toLowerCase();
+      return [
+        'p',
+        'div',
+        'h1',
+        'h2',
+        'h3',
+        'h4',
+        'h5',
+        'h6',
+        'blockquote',
+        'pre',
+        'ul',
+        'ol',
+        'table',
+        'hr',
+      ].includes(tag);
+    }
+    return false;
   }
 
   private nodeToMarkdown(node: Node): string {
@@ -1194,33 +1355,33 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
       }
       case 'pre': {
         const codeText = this.extractCodeText(el);
-        return `\n\n\`\`\`\n${codeText.trim()}\n\`\`\`\n\n`;
+        return `\`\`\`\n${codeText.trim()}\n\`\`\``;
       }
       case 'h1':
-        return `\n\n# ${getChildrenMd().trim()}\n\n`;
+        return `# ${getChildrenMd().trim()}`;
       case 'h2':
-        return `\n\n## ${getChildrenMd().trim()}\n\n`;
+        return `## ${getChildrenMd().trim()}`;
       case 'h3':
-        return `\n\n### ${getChildrenMd().trim()}\n\n`;
+        return `### ${getChildrenMd().trim()}`;
       case 'h4':
-        return `\n\n#### ${getChildrenMd().trim()}\n\n`;
+        return `#### ${getChildrenMd().trim()}`;
       case 'h5':
-        return `\n\n##### ${getChildrenMd().trim()}\n\n`;
+        return `##### ${getChildrenMd().trim()}`;
       case 'h6':
-        return `\n\n###### ${getChildrenMd().trim()}\n\n`;
+        return `###### ${getChildrenMd().trim()}`;
       case 'blockquote': {
         const text = getChildrenMd().trim();
         const lines = text.split('\n');
-        return '\n\n' + lines.map((l) => `> ${l}`).join('\n') + '\n\n';
+        return lines.map((l) => `> ${l}`).join('\n');
       }
       case 'a': {
         const href = el.getAttribute('href') || '';
         return `[${getChildrenMd().trim()}](${href})`;
       }
       case 'hr':
-        return '\n\n---\n\n';
+        return '---';
       case 'ul': {
-        let listStr = '\n\n';
+        const listItems: string[] = [];
         el.querySelectorAll(':scope > li').forEach((li) => {
           const checkbox = li.querySelector('input[type="checkbox"]') as HTMLInputElement;
           if (checkbox) {
@@ -1232,23 +1393,23 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
               }
               itemText += this.nodeToMarkdown(child);
             });
-            listStr += `- [${checked}] ${itemText.trim()}\n`;
+            listItems.push(`- [${checked}] ${itemText.trim()}`);
           } else {
-            listStr += `- ${this.nodeToMarkdown(li).trim()}\n`;
+            listItems.push(`- ${this.nodeToMarkdown(li).trim()}`);
           }
         });
-        return listStr + '\n';
+        return listItems.join('\n');
       }
       case 'ol': {
-        let listStr = '\n\n';
+        const listItems: string[] = [];
         let idx = 1;
         el.querySelectorAll(':scope > li').forEach((li) => {
-          listStr += `${idx++}. ${this.nodeToMarkdown(li).trim()}\n`;
+          listItems.push(`${idx++}. ${this.nodeToMarkdown(li).trim()}`);
         });
-        return listStr + '\n';
+        return listItems.join('\n');
       }
       case 'table':
-        return '\n\n' + this.tableToMarkdown(el) + '\n\n';
+        return this.tableToMarkdown(el);
       case 'th':
       case 'td': {
         return getChildrenMd().replace(/\n+/g, ' ').trim();
@@ -1259,7 +1420,7 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
         if (el.classList.contains('md-flowchart-card')) {
           const encodedCode = el.getAttribute('data-flowchart-code') || '';
           const code = encodedCode ? decodeURIComponent(encodedCode) : '';
-          return `\n\n\`\`\`mermaid\n${code}\n\`\`\`\n\n`;
+          return `\`\`\`mermaid\n${code}\n\`\`\``;
         }
         if (el.classList.contains('md-check-item')) {
           const checkbox = el.querySelector('input[type="checkbox"]') as HTMLInputElement;
@@ -1271,14 +1432,12 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
             }
             itemText += this.nodeToMarkdown(child);
           });
-          return `\n- [${checked}] ${itemText.trim()}\n`;
+          return `- [${checked}] ${itemText.trim()}`;
         }
-        const text = getChildrenMd().trim();
-        return text ? `\n\n${text}\n\n` : '';
+        return getChildrenMd().trim();
       }
       case 'p': {
-        const text = getChildrenMd().trim();
-        return text ? `\n\n${text}\n\n` : '';
+        return getChildrenMd().trim();
       }
       default:
         return getChildrenMd();
