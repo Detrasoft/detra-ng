@@ -154,14 +154,18 @@
   font-size: 1.45rem;
   font-weight: 700;
   color: var(--theme-text-heading, #0f172a);
-  margin: var(--space-2, 8px) 0 var(--space-1, 4px);
+  margin: 1em 0 0.5em;
 }
 
 :host ::ng-deep .editor-area h2 {
   font-size: 1.25rem;
   font-weight: 600;
   color: var(--theme-text-heading, #0f172a);
-  margin: var(--space-2, 8px) 0 var(--space-1, 4px);
+  margin: 1em 0 0.5em;
+}
+
+:host ::ng-deep .editor-area > :first-child {
+  margin-top: 0;
 }
 
 :host ::ng-deep .editor-area h3 {
@@ -194,8 +198,8 @@
 
 :host ::ng-deep .editor-area p,
 .editor-area p {
-  margin: 0 0 4px;
-  line-height: 1.5;
+  margin: 0 0 0.75em;
+  line-height: 1.6;
 }
 
 :host ::ng-deep .editor-area p:empty,
@@ -264,19 +268,34 @@
 :host ::ng-deep .editor-area blockquote {
   border-left: 3px solid var(--color-primary-400, #60a5fa);
   padding-left: var(--space-3, 12px);
-  margin: var(--space-2, 8px) 0;
+  margin: 0 0 0.75em;
   color: var(--theme-text-muted, #64748b);
   font-style: italic;
 }
 
 :host ::ng-deep .editor-area ul,
 :host ::ng-deep .editor-area ol {
-  padding-left: var(--space-5, 20px);
-  margin: var(--space-1, 4px) 0;
+  padding-left: 1.5em;
+  margin: 0 0 0.75em;
+}
+
+/* O reset da base tira os marcadores das listas; no editor elas aparecem como no Markdown. */
+:host ::ng-deep .editor-area ul {
+  list-style: disc outside;
+}
+
+:host ::ng-deep .editor-area ol {
+  list-style: decimal outside;
+}
+
+:host ::ng-deep .editor-area ul ul {
+  list-style-type: circle;
 }
 
 :host ::ng-deep .editor-area li {
-  margin-bottom: 2px;
+  display: list-item;
+  margin: 0 0 0.25em;
+  line-height: 1.6;
 }
 
 :host ::ng-deep .editor-area .md-check-item {
