@@ -1231,9 +1231,9 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
           if (isConsecutiveList) {
             result += '\n';
           } else {
-            // Separação entre blocos: 2 quebras padrão de parágrafo + 1 para cada linha vazia extra
-            const separatorCount = 2 + pendingEmptyLines;
-            result += '\n'.repeat(separatorCount);
+            // Linhas em branco não marcam espaço no Markdown: cada linha vazia criada no editor
+            // vira um parágrafo só com <br>, que o markdownToHtml devolve como linha vazia.
+            result += '\n\n' + '<br>\n\n'.repeat(pendingEmptyLines);
           }
         }
         result += block.text;
