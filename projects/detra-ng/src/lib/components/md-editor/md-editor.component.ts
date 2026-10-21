@@ -1110,9 +1110,10 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
 
     // 9. Listas simples e ordenadas
     html = html.replace(/^\d+\.\s+(.+)$/gm, '<li class="md-ol-item">$1</li>');
-    html = html.replace(/((?:<li class="md-ol-item">.+<\/li>\n?)+)/g, '<ol>$1</ol>');
+    // A quebra de linha depois do último item fica fora da lista: ela separa a lista do bloco seguinte.
+    html = html.replace(/((?:<li class="md-ol-item">.+<\/li>(?:\n(?=<li class="md-ol-item">))?)+)/g, '<ol>$1</ol>');
     html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
-    html = html.replace(/((?:<li>.+<\/li>\n?)+)/g, '<ul>$1</ul>');
+    html = html.replace(/((?:<li>.+<\/li>(?:\n(?=<li>))?)+)/g, '<ul>$1</ul>');
 
     // 10. Links
     html = html.replace(
@@ -1127,14 +1128,9 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
     // Normalizar CRLF para LF
     html = html.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
-    // Cada sequência de 2 ou mais quebras de linha:
-    // \n\n (2) -> fecha e abre parágrafo: </p><p>
-    // \n\n\n (3) -> parágrafo + 1 linha vazia: </p><p><br></p><p>
-    // \n\n\n\n (4) -> parágrafo + 2 linhas vazias: </p><p><br></p><p><br></p><p>
-    html = html.replace(/\n{2,}/g, (match) => {
-      const extraEmptyCount = match.length - 2;
-      return '</p>' + '<p><br></p>'.repeat(extraEmptyCount) + '<p>';
-    });
+    // Como no Markdown padrão, qualquer sequência de linhas em branco separa dois parágrafos
+    // com o mesmo espaço: linhas em branco extras não viram parágrafos vazios.
+    html = html.replace(/\n(?:[ \t]*\n)+/g, '</p><p>');
 
     html = `<p>${html}</p>`;
 
