@@ -1057,8 +1057,10 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
     });
 
     // 2. Proteger Inline Code com placeholders
+    // O código inline não atravessa linhas: uma crase solta (ex.: acento grave de um PDF
+    // convertido) não pode casar com outra crase parágrafos depois e engolir o texto entre elas.
     const inlineCodes: string[] = [];
-    html = html.replace(/`([^`]+)`/g, (_m, code) => {
+    html = html.replace(/`([^`\n]+)`/g, (_m, code) => {
       const idx = inlineCodes.length;
       const safeCode = code
         .replace(/&/g, '&amp;')
