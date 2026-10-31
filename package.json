@@ -1,7 +1,7 @@
 {
   "name": "@detrasoft.com/detra-ng",
-  "version": "0.6.27",
-  "description": "DetraSoft Angular Design System — standalone components com CSS puro para Angular 17-20",
+  "version": "0.6.28",
+  "description": "DetraSoft Angular Design System — standalone components com CSS puro para Angular 17-22",
   "keywords": [
     "angular",
     "design-system",
@@ -44,13 +44,13 @@
     "pack": "npm pack"
   },
   "peerDependencies": {
-    "@angular/animations": ">=17.0.0 <21.0.0",
-    "@angular/cdk": ">=17.0.0 <21.0.0",
-    "@angular/common": ">=17.0.0 <21.0.0",
-    "@angular/compiler": ">=17.0.0 <21.0.0",
-    "@angular/core": ">=17.0.0 <21.0.0",
-    "@angular/forms": ">=17.0.0 <21.0.0",
-    "@angular/platform-browser": ">=17.0.0 <21.0.0",
+    "@angular/animations": ">=17.0.0 <23.0.0",
+    "@angular/cdk": ">=17.0.0 <23.0.0",
+    "@angular/common": ">=17.0.0 <23.0.0",
+    "@angular/compiler": ">=17.0.0 <23.0.0",
+    "@angular/core": ">=17.0.0 <23.0.0",
+    "@angular/forms": ">=17.0.0 <23.0.0",
+    "@angular/platform-browser": ">=17.0.0 <23.0.0",
     "rxjs": ">=7.0.0",
     "zone.js": ">=0.13.0"
   },
