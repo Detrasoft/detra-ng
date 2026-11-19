@@ -38,13 +38,13 @@ let nextId = 0;
         [class.editor-container--disabled]="disabled"
       >
         <!-- Toolbar Visual WYSIWYG -->
-        <div class="editor-toolbar" *ngIf="!disabled">
+        <div class="editor-toolbar" *ngIf="!disabled" role="toolbar" aria-label="Ferramentas de formatação"
+          (pointerdown)="$event.preventDefault()" (mousedown)="$event.preventDefault()">
           <!-- Formatação Básica -->
           <div class="toolbar-group">
             <button
               type="button"
               class="toolbar-btn"
-              (mousedown)="$event.preventDefault()"
               (click)="exec('bold')"
               title="Negrito (Ctrl+B)"
             >
@@ -53,7 +53,6 @@ let nextId = 0;
             <button
               type="button"
               class="toolbar-btn"
-              (mousedown)="$event.preventDefault()"
               (click)="exec('italic')"
               title="Itálico (Ctrl+I)"
             >
@@ -62,7 +61,6 @@ let nextId = 0;
             <button
               type="button"
               class="toolbar-btn"
-              (mousedown)="$event.preventDefault()"
               (click)="exec('strikeThrough')"
               title="Tachado"
             >
@@ -71,7 +69,6 @@ let nextId = 0;
             <button
               type="button"
               class="toolbar-btn"
-              (mousedown)="$event.preventDefault()"
               (click)="insertInlineCode()"
               title="Código inline"
             >
@@ -86,7 +83,6 @@ let nextId = 0;
             <button
               type="button"
               class="toolbar-btn"
-              (mousedown)="$event.preventDefault()"
               (click)="setHeading('H1')"
               title="Título 1"
             >
@@ -95,7 +91,6 @@ let nextId = 0;
             <button
               type="button"
               class="toolbar-btn"
-              (mousedown)="$event.preventDefault()"
               (click)="setHeading('H2')"
               title="Título 2"
             >
@@ -104,7 +99,6 @@ let nextId = 0;
             <button
               type="button"
               class="toolbar-btn"
-              (mousedown)="$event.preventDefault()"
               (click)="setHeading('H3')"
               title="Título 3"
             >
@@ -113,7 +107,6 @@ let nextId = 0;
             <button
               type="button"
               class="toolbar-btn"
-              (mousedown)="$event.preventDefault()"
               (click)="setHeading('P')"
               title="Parágrafo normal"
             >
@@ -128,7 +121,6 @@ let nextId = 0;
             <button
               type="button"
               class="toolbar-btn"
-              (mousedown)="$event.preventDefault()"
               (click)="exec('insertUnorderedList')"
               title="Lista com marcadores"
             >
@@ -137,7 +129,6 @@ let nextId = 0;
             <button
               type="button"
               class="toolbar-btn"
-              (mousedown)="$event.preventDefault()"
               (click)="exec('insertOrderedList')"
               title="Lista numerada"
             >
@@ -146,7 +137,6 @@ let nextId = 0;
             <button
               type="button"
               class="toolbar-btn"
-              (mousedown)="$event.preventDefault()"
               (click)="insertChecklist()"
               title="Inserir Checklist"
             >
@@ -161,7 +151,6 @@ let nextId = 0;
             <button
               type="button"
               class="toolbar-btn"
-              (mousedown)="$event.preventDefault()"
               (click)="toggleBlockquote()"
               title="Citação"
             >
@@ -170,7 +159,6 @@ let nextId = 0;
             <button
               type="button"
               class="toolbar-btn"
-              (mousedown)="$event.preventDefault()"
               (click)="insertCodeBlock()"
               title="Bloco de código"
             >
@@ -179,7 +167,6 @@ let nextId = 0;
             <button
               type="button"
               class="toolbar-btn"
-              (mousedown)="$event.preventDefault()"
               (click)="insertLink()"
               title="Inserir link"
             >
@@ -188,7 +175,6 @@ let nextId = 0;
             <button
               type="button"
               class="toolbar-btn"
-              (mousedown)="$event.preventDefault()"
               (click)="insertHorizontalRule()"
               title="Linha divisória"
             >
@@ -200,7 +186,6 @@ let nextId = 0;
               <button
                 type="button"
                 class="toolbar-btn"
-                (mousedown)="$event.preventDefault()"
                 (click)="toggleTableMenu()"
                 title="Inserir tabela"
               >
@@ -209,7 +194,6 @@ let nextId = 0;
               <div
                 class="table-menu-dropdown"
                 *ngIf="showTableMenu"
-                (mousedown)="$event.preventDefault()"
               >
                 <div class="table-grid-picker">
                   <div class="grid-picker-header">Inserir Tabela</div>
@@ -233,7 +217,6 @@ let nextId = 0;
             <button
               type="button"
               class="toolbar-btn toolbar-btn--flowchart"
-              (mousedown)="$event.preventDefault()"
               (click)="openFlowchartEditor()"
               title="Desenhar Fluxograma / Diagrama"
             >
@@ -243,7 +226,6 @@ let nextId = 0;
             <button
               type="button"
               class="toolbar-btn"
-              (mousedown)="$event.preventDefault()"
               (click)="exec('removeFormat')"
               title="Limpar formatação"
             >
@@ -314,6 +296,7 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
   // Controle de Fluxograma (Flowchart Designer)
   showFlowchartModal = false;
   currentFlowchartData: FlowchartData | null = null;
+  private flowchartInsertionRange: Range | null = null;
   private editingFlowchartTarget: HTMLElement | null = null;
 
   // Armazena último Markdown emitido para evitar loops de digitação
@@ -447,6 +430,10 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
   }
 
   openFlowchartEditor(existingData?: FlowchartData | null, targetElement?: HTMLElement | null): void {
+    const selection = window.getSelection();
+    const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+    this.flowchartInsertionRange = !targetElement && range && this.editorArea.nativeElement.contains(range.commonAncestorContainer)
+      ? range.cloneRange() : null;
     this.currentFlowchartData = existingData || null;
     this.editingFlowchartTarget = targetElement || null;
     this.showFlowchartModal = true;
@@ -477,13 +464,15 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
       this.editingFlowchartTarget.outerHTML = cardHtml;
       this.editingFlowchartTarget = null;
     } else {
-      this.insertHtmlAtSelection(cardHtml);
+      this.insertHtmlAtSelection(cardHtml, this.flowchartInsertionRange);
     }
 
+    this.flowchartInsertionRange = null;
     this.onEditorInput();
   }
 
   onFlowchartCancel(): void {
+    this.flowchartInsertionRange = null;
     this.showFlowchartModal = false;
     this.editingFlowchartTarget = null;
   }
@@ -986,9 +975,13 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
     sel.addRange(range);
   }
 
-  private insertHtmlAtSelection(html: string): void {
+  private insertHtmlAtSelection(html: string, savedRange?: Range | null): void {
     this.focusEditor();
     const sel = window.getSelection();
+    if (savedRange && this.editorArea.nativeElement.contains(savedRange.commonAncestorContainer)) {
+      sel?.removeAllRanges();
+      sel?.addRange(savedRange);
+    }
     if (!sel || sel.rangeCount === 0) {
       if (this.editorArea) {
         this.editorArea.nativeElement.innerHTML += html;
@@ -1019,7 +1012,7 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
 
   private focusEditor(): void {
     if (this.editorArea) {
-      this.editorArea.nativeElement.focus();
+      this.editorArea.nativeElement.focus({ preventScroll: true });
       try {
         document.execCommand('defaultParagraphSeparator', false, 'p');
       } catch (e) {}
