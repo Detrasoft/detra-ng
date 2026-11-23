@@ -56,7 +56,8 @@ export { SearchModalComponent } from './search-modal/search-modal.component';
 
 // Rich editor
 export { HtmlEditorComponent } from './html-editor/html-editor.component';
-export { MdEditorComponent } from './md-editor/md-editor.component';
+export { MdEditorComponent, MdEditorToolDirective, MD_EDITOR_TEXT_COLORS } from './md-editor/md-editor.component';
+export type { MdEditorTextColor } from './md-editor/md-editor.component';
 export {
   FlowchartEditorComponent,
   type FlowchartData,

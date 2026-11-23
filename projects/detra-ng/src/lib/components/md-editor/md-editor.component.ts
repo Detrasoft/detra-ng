@@ -1,10 +1,19 @@
 import {
   Component,
+  Directive,
   Input,
+  Output,
+  EventEmitter,
   forwardRef,
   ViewChild,
+  ContentChildren,
+  QueryList,
   ElementRef,
   AfterViewInit,
+  OnDestroy,
+  NgZone,
+  ChangeDetectorRef,
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR, FormsModule } from '@angular/forms';
@@ -17,6 +26,66 @@ import {
 } from '../flowchart-editor/flowchart-editor.component';
 
 let nextId = 0;
+
+/**
+ * Ferramenta do projeto na barra do editor (TK2026-01734). Marque cada botão projetado com `dsMdTool`
+ * (`<button dsMdTool ...>` dentro de `<ds-md-editor>`): ele entra na última coluna da barra, com o mesmo
+ * visual das ferramentas da lib. Os botões não tiram a seleção do texto (o toque não move o foco).
+ */
+@Directive({
+  selector: '[dsMdTool]',
+  standalone: true,
+  host: { class: 'ds-md-tool ds-md-tool--custom' },
+})
+export class MdEditorToolDirective {}
+
+/** Cor oferecida na coluna "Cor do texto". `value` em hexadecimal (#rgb ou #rrggbb). */
+export interface MdEditorTextColor {
+  name: string;
+  value: string;
+}
+
+export const MD_EDITOR_TEXT_COLORS: MdEditorTextColor[] = [
+  { name: 'Vermelho', value: '#e11d48' },
+  { name: 'Laranja', value: '#ea580c' },
+  { name: 'Âmbar', value: '#ca8a04' },
+  { name: 'Verde', value: '#16a34a' },
+  { name: 'Azul-petróleo', value: '#0d9488' },
+  { name: 'Azul', value: '#2563eb' },
+  { name: 'Violeta', value: '#7c3aed' },
+  { name: 'Rosa', value: '#db2777' },
+  { name: 'Cinza', value: '#64748b' },
+];
+
+type MdToolbarGroup = 'style' | 'block' | 'list' | 'insert' | 'table' | 'color' | 'custom';
+
+/** Formatação onde está o cursor: deixa os botões correspondentes marcados. */
+interface MdActiveFormat {
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+  strike: boolean;
+  code: boolean;
+  block: string;
+  ul: boolean;
+  ol: boolean;
+  check: boolean;
+  quote: boolean;
+  codeBlock: boolean;
+  link: boolean;
+  color: string | null;
+}
+
+const NO_FORMAT: MdActiveFormat = {
+  bold: false, italic: false, underline: false, strike: false, code: false, block: 'p',
+  ul: false, ol: false, check: false, quote: false, codeBlock: false, link: false, color: null,
+};
+
+/** Celular e tablet: a barra começa recolhida no pincel. */
+const COMPACT_QUERY = '(max-width: 767px), (hover: none) and (pointer: coarse)';
+const TOUCH_QUERY = '(hover: none) and (pointer: coarse)';
+/** Cor provisória usada para tirar a cor de um trecho (o navegador divide os spans por nós). */
+const COLOR_SENTINEL = '#010203';
 
 @Component({
   selector: 'ds-md-editor',
@@ -37,202 +106,196 @@ let nextId = 0;
         class="editor-container"
         [class.editor-container--disabled]="disabled"
       >
-        <!-- Toolbar Visual WYSIWYG -->
-        <div class="editor-toolbar" *ngIf="!disabled" role="toolbar" aria-label="Ferramentas de formatação"
-          (pointerdown)="$event.preventDefault()" (mousedown)="$event.preventDefault()">
-          <!-- Formatação Básica -->
-          <div class="toolbar-group">
-            <button
-              type="button"
-              class="toolbar-btn"
-              (click)="exec('bold')"
-              title="Negrito (Ctrl+B)"
-            >
-              <i class="fa-solid fa-bold"></i>
-            </button>
-            <button
-              type="button"
-              class="toolbar-btn"
-              (click)="exec('italic')"
-              title="Itálico (Ctrl+I)"
-            >
-              <i class="fa-solid fa-italic"></i>
-            </button>
-            <button
-              type="button"
-              class="toolbar-btn"
-              (click)="exec('strikeThrough')"
-              title="Tachado"
-            >
-              <i class="fa-solid fa-strikethrough"></i>
-            </button>
-            <button
-              type="button"
-              class="toolbar-btn"
-              (click)="insertInlineCode()"
-              title="Código inline"
-            >
-              <i class="fa-solid fa-code"></i>
-            </button>
-          </div>
+        <!--
+          Barra de ferramentas em ilha (TK2026-01734): uma pílula com um botão por grupo. Cada grupo abre
+          uma coluna com as opções (para cima no dock, para baixo no topo). O pincel recolhe e expande a
+          barra no celular; no desktop ela fica sempre aberta. No fim, a área do projeto ([dsMdTool]).
+        -->
+        @if (!disabled) {
+          <div
+            class="editor-toolbar ds-md-bar"
+            [class.ds-md-bar--dock]="toolbarPlacement === 'dock'"
+            [class.ds-md-bar--top]="toolbarPlacement !== 'dock'"
+            [class.is-compact]="compact"
+            [class.is-collapsible]="collapsible"
+            [class.is-expanded]="isExpanded"
+            [class.has-open]="!!openGroup"
+            [style.--ds-md-kb.px]="keyboardInset"
+            role="toolbar"
+            aria-label="Ferramentas de formatação"
+            (keydown.escape)="closeGroup()"
+            (pointerdown)="$event.preventDefault()"
+            (mousedown)="$event.preventDefault()"
+          >
+            <div class="ds-md-bar__row">
+              @if (collapsible) {
+                <button
+                  type="button"
+                  class="ds-md-brush"
+                  [class.is-on]="isExpanded"
+                  (click)="toggleExpanded()"
+                  [attr.aria-expanded]="isExpanded"
+                  [attr.aria-label]="isExpanded ? 'Recolher as ferramentas de formatação' : 'Abrir as ferramentas de formatação'"
+                  [title]="isExpanded ? 'Recolher formatação' : 'Formatar o texto'"
+                >
+                  <i class="fa-solid fa-paintbrush" aria-hidden="true"></i>
+                </button>
+              } @else {
+                <span class="ds-md-brush ds-md-brush--static" aria-hidden="true">
+                  <i class="fa-solid fa-paintbrush"></i>
+                </span>
+              }
 
-          <div class="toolbar-separator"></div>
+              <div class="ds-md-bar__reveal" [attr.aria-hidden]="!isExpanded" [attr.inert]="isExpanded ? null : ''">
+                <div class="ds-md-bar__track" [class.can-left]="canScrollLeft" [class.can-right]="canScrollRight">
+                 <div class="ds-md-bar__scroll" (scroll)="onTrackScroll()">
+                  <button type="button" class="ds-md-group" style="--i: 0" data-group="style"
+                    [class.is-open]="openGroup === 'style'"
+                    [class.is-active]="active.bold || active.italic || active.underline || active.strike || active.code"
+                    (click)="toggleGroup('style', $event)" aria-haspopup="true" [attr.aria-expanded]="openGroup === 'style'"
+                    aria-label="Estilo do texto" title="Negrito, itálico, sublinhado e tachado">
+                    <i class="fa-solid fa-bold" aria-hidden="true"></i>
+                  </button>
 
-          <!-- Títulos / Formatos de Bloco -->
-          <div class="toolbar-group">
-            <button
-              type="button"
-              class="toolbar-btn"
-              (click)="setHeading('H1')"
-              title="Título 1"
-            >
-              H1
-            </button>
-            <button
-              type="button"
-              class="toolbar-btn"
-              (click)="setHeading('H2')"
-              title="Título 2"
-            >
-              H2
-            </button>
-            <button
-              type="button"
-              class="toolbar-btn"
-              (click)="setHeading('H3')"
-              title="Título 3"
-            >
-              H3
-            </button>
-            <button
-              type="button"
-              class="toolbar-btn"
-              (click)="setHeading('P')"
-              title="Parágrafo normal"
-            >
-              <i class="fa-solid fa-paragraph"></i>
-            </button>
-          </div>
+                  <button type="button" class="ds-md-group ds-md-group--text" style="--i: 1" data-group="block"
+                    [class.is-open]="openGroup === 'block'"
+                    [class.is-active]="active.block !== 'p'"
+                    (click)="toggleGroup('block', $event)" aria-haspopup="true" [attr.aria-expanded]="openGroup === 'block'"
+                    aria-label="Títulos e parágrafo" title="Títulos e parágrafo">
+                    {{ blockLabel }}
+                  </button>
 
-          <div class="toolbar-separator"></div>
+                  <button type="button" class="ds-md-group" style="--i: 2" data-group="list"
+                    [class.is-open]="openGroup === 'list'"
+                    [class.is-active]="active.ul || active.ol || active.check"
+                    (click)="toggleGroup('list', $event)" aria-haspopup="true" [attr.aria-expanded]="openGroup === 'list'"
+                    aria-label="Listas" title="Listas e checklist">
+                    <i class="fa-solid" [class.fa-list-ul]="!active.ol && !active.check" [class.fa-list-ol]="active.ol"
+                      [class.fa-square-check]="active.check && !active.ol" aria-hidden="true"></i>
+                  </button>
 
-          <!-- Listas e Checklists -->
-          <div class="toolbar-group">
-            <button
-              type="button"
-              class="toolbar-btn"
-              (click)="exec('insertUnorderedList')"
-              title="Lista com marcadores"
-            >
-              <i class="fa-solid fa-list-ul"></i>
-            </button>
-            <button
-              type="button"
-              class="toolbar-btn"
-              (click)="exec('insertOrderedList')"
-              title="Lista numerada"
-            >
-              <i class="fa-solid fa-list-ol"></i>
-            </button>
-            <button
-              type="button"
-              class="toolbar-btn"
-              (click)="insertChecklist()"
-              title="Inserir Checklist"
-            >
-              <i class="fa-solid fa-square-check"></i>
-            </button>
-          </div>
+                  <button type="button" class="ds-md-group" style="--i: 3" data-group="insert"
+                    [class.is-open]="openGroup === 'insert'"
+                    [class.is-active]="active.quote || active.codeBlock || active.link"
+                    (click)="toggleGroup('insert', $event)" aria-haspopup="true" [attr.aria-expanded]="openGroup === 'insert'"
+                    aria-label="Citação, código, link e linha" title="Citação, código, link e linha">
+                    <i class="fa-solid fa-quote-left" aria-hidden="true"></i>
+                  </button>
 
-          <div class="toolbar-separator"></div>
+                  <button type="button" class="ds-md-group" style="--i: 4" data-group="table"
+                    [class.is-open]="openGroup === 'table'"
+                    (click)="toggleGroup('table', $event)" aria-haspopup="true" [attr.aria-expanded]="openGroup === 'table'"
+                    aria-label="Inserir tabela" title="Inserir tabela">
+                    <i class="fa-solid fa-table-cells" aria-hidden="true"></i>
+                  </button>
 
-          <!-- Citações, Blocos e Tabelas -->
-          <div class="toolbar-group">
-            <button
-              type="button"
-              class="toolbar-btn"
-              (click)="toggleBlockquote()"
-              title="Citação"
-            >
-              <i class="fa-solid fa-quote-left"></i>
-            </button>
-            <button
-              type="button"
-              class="toolbar-btn"
-              (click)="insertCodeBlock()"
-              title="Bloco de código"
-            >
-              <i class="fa-solid fa-file-code"></i>
-            </button>
-            <button
-              type="button"
-              class="toolbar-btn"
-              (click)="insertLink()"
-              title="Inserir link"
-            >
-              <i class="fa-solid fa-link"></i>
-            </button>
-            <button
-              type="button"
-              class="toolbar-btn"
-              (click)="insertHorizontalRule()"
-              title="Linha divisória"
-            >
-              <i class="fa-solid fa-minus"></i>
-            </button>
+                  <button type="button" class="ds-md-group ds-md-group--color" style="--i: 5" data-group="color"
+                    [class.is-open]="openGroup === 'color'"
+                    [class.is-active]="!!active.color"
+                    (click)="toggleGroup('color', $event)" aria-haspopup="true" [attr.aria-expanded]="openGroup === 'color'"
+                    aria-label="Cor do texto" title="Cor do texto">
+                    <i class="fa-solid fa-font" aria-hidden="true"></i>
+                    <span class="ds-md-group__ink" [style.background]="active.color || null" aria-hidden="true"></span>
+                  </button>
 
-            <!-- Menu de Tabela -->
-            <div class="table-picker-wrapper">
-              <button
-                type="button"
-                class="toolbar-btn"
-                (click)="toggleTableMenu()"
-                title="Inserir tabela"
-              >
-                <i class="fa-solid fa-table"></i>
-              </button>
-              <div
-                class="table-menu-dropdown"
-                *ngIf="showTableMenu"
-              >
-                <div class="table-grid-picker">
-                  <div class="grid-picker-header">Inserir Tabela</div>
-                  <div class="grid-picker-box">
-                    <div *ngFor="let r of gridRows" class="grid-picker-row">
-                      <div
-                        *ngFor="let c of gridCols"
-                        class="grid-picker-cell"
-                        [class.active]="r <= hoverRow && c <= hoverCol"
-                        (mouseenter)="onGridHover(r, c)"
-                        (click)="onGridSelect(r, c)"
-                      ></div>
-                    </div>
-                  </div>
-                  <div class="grid-picker-footer">{{ hoverRow }} x {{ hoverCol }}</div>
+                  @if (showKeyboardButton) {
+                    <button type="button" class="ds-md-group ds-md-group--keyboard" style="--i: 6"
+                      [class.is-active]="keyboardHidden"
+                      (click)="toggleKeyboard()" [attr.aria-pressed]="keyboardHidden"
+                      [attr.aria-label]="keyboardHidden ? 'Mostrar o teclado' : 'Esconder o teclado'"
+                      [title]="keyboardHidden ? 'Mostrar o teclado' : 'Esconder o teclado'">
+                      <i class="fa-solid fa-keyboard" aria-hidden="true"></i>
+                      <span class="ds-md-group__chevron" aria-hidden="true">
+                        <i class="fa-solid" [class.fa-chevron-down]="!keyboardHidden" [class.fa-chevron-up]="keyboardHidden"></i>
+                      </span>
+                    </button>
+                  }
+
+                  @if (hasCustomTools) {
+                    <span class="ds-md-bar__sep" aria-hidden="true"></span>
+                    <button type="button" class="ds-md-group ds-md-group--custom" style="--i: 7" data-group="custom"
+                      [class.is-open]="openGroup === 'custom'"
+                      (click)="toggleGroup('custom', $event)" aria-haspopup="true" [attr.aria-expanded]="openGroup === 'custom'"
+                      [attr.aria-label]="customToolsLabel" [title]="customToolsLabel">
+                      <i [class]="customToolsIcon" aria-hidden="true"></i>
+                    </button>
+                  }
+                 </div>
                 </div>
               </div>
+
+              <ng-content select="[dsMdToolbarEnd]"></ng-content>
             </div>
 
-            <!-- Botão de Fluxograma / Diagrama Visual -->
-            <button
-              type="button"
-              class="toolbar-btn toolbar-btn--flowchart"
-              (click)="openFlowchartEditor()"
-              title="Desenhar Fluxograma / Diagrama"
-            >
-              <i class="fa-solid fa-diagram-project"></i>
-            </button>
+            <!-- Colunas de cada grupo -->
+            <div class="ds-md-col" role="group" aria-label="Estilo do texto" [class.is-open]="openGroup === 'style'" [style.--x.px]="colX['style']">
+              <button type="button" class="ds-md-tool" style="--i: 0" [class.is-active]="active.bold" (click)="exec('bold')" title="Negrito (Ctrl+B)" aria-label="Negrito" [attr.aria-pressed]="active.bold"><i class="fa-solid fa-bold" aria-hidden="true"></i></button>
+              <button type="button" class="ds-md-tool" style="--i: 1" [class.is-active]="active.italic" (click)="exec('italic')" title="Itálico (Ctrl+I)" aria-label="Itálico" [attr.aria-pressed]="active.italic"><i class="fa-solid fa-italic" aria-hidden="true"></i></button>
+              <button type="button" class="ds-md-tool" style="--i: 2" [class.is-active]="active.underline" (click)="exec('underline')" title="Sublinhado (Ctrl+U)" aria-label="Sublinhado" [attr.aria-pressed]="active.underline"><i class="fa-solid fa-underline" aria-hidden="true"></i></button>
+              <button type="button" class="ds-md-tool" style="--i: 3" [class.is-active]="active.strike" (click)="exec('strikeThrough')" title="Tachado" aria-label="Tachado" [attr.aria-pressed]="active.strike"><i class="fa-solid fa-strikethrough" aria-hidden="true"></i></button>
+              <button type="button" class="ds-md-tool" style="--i: 4" [class.is-active]="active.code" (click)="insertInlineCode()" title="Código no texto" aria-label="Código no texto" [attr.aria-pressed]="active.code"><i class="fa-solid fa-code" aria-hidden="true"></i></button>
+              <button type="button" class="ds-md-tool ds-md-tool--quiet" style="--i: 5" (click)="exec('removeFormat')" title="Limpar formatação" aria-label="Limpar formatação"><i class="fa-solid fa-eraser" aria-hidden="true"></i></button>
+            </div>
 
-            <button
-              type="button"
-              class="toolbar-btn"
-              (click)="exec('removeFormat')"
-              title="Limpar formatação"
-            >
-              <i class="fa-solid fa-remove-format"></i>
-            </button>
+            <div class="ds-md-col" role="group" aria-label="Títulos e parágrafo" [class.is-open]="openGroup === 'block'" [style.--x.px]="colX['block']">
+              <button type="button" class="ds-md-tool ds-md-tool--text" style="--i: 0" [class.is-active]="active.block === 'h1'" (click)="setHeading('H1'); closeGroup()" title="Título 1" [attr.aria-pressed]="active.block === 'h1'">H1</button>
+              <button type="button" class="ds-md-tool ds-md-tool--text" style="--i: 1" [class.is-active]="active.block === 'h2'" (click)="setHeading('H2'); closeGroup()" title="Título 2" [attr.aria-pressed]="active.block === 'h2'">H2</button>
+              <button type="button" class="ds-md-tool ds-md-tool--text" style="--i: 2" [class.is-active]="active.block === 'h3'" (click)="setHeading('H3'); closeGroup()" title="Título 3" [attr.aria-pressed]="active.block === 'h3'">H3</button>
+              <button type="button" class="ds-md-tool ds-md-tool--text" style="--i: 3" [class.is-active]="active.block === 'h4'" (click)="setHeading('H4'); closeGroup()" title="Título 4" [attr.aria-pressed]="active.block === 'h4'">H4</button>
+              <button type="button" class="ds-md-tool ds-md-tool--text" style="--i: 4" [class.is-active]="active.block === 'p'" (click)="setHeading('P'); closeGroup()" title="Parágrafo normal" [attr.aria-pressed]="active.block === 'p'">P</button>
+            </div>
+
+            <div class="ds-md-col" role="group" aria-label="Listas" [class.is-open]="openGroup === 'list'" [style.--x.px]="colX['list']">
+              <button type="button" class="ds-md-tool" style="--i: 0" [class.is-active]="active.ul" (click)="exec('insertUnorderedList'); closeGroup()" title="Lista com marcadores" aria-label="Lista com marcadores" [attr.aria-pressed]="active.ul"><i class="fa-solid fa-list-ul" aria-hidden="true"></i></button>
+              <button type="button" class="ds-md-tool" style="--i: 1" [class.is-active]="active.ol" (click)="exec('insertOrderedList'); closeGroup()" title="Lista numerada" aria-label="Lista numerada" [attr.aria-pressed]="active.ol"><i class="fa-solid fa-list-ol" aria-hidden="true"></i></button>
+              <button type="button" class="ds-md-tool" style="--i: 2" [class.is-active]="active.check" (click)="insertChecklist(); closeGroup()" title="Checklist" aria-label="Checklist" [attr.aria-pressed]="active.check"><i class="fa-solid fa-square-check" aria-hidden="true"></i></button>
+            </div>
+
+            <div class="ds-md-col" role="group" aria-label="Inserir" [class.is-open]="openGroup === 'insert'" [style.--x.px]="colX['insert']">
+              <button type="button" class="ds-md-tool" style="--i: 0" [class.is-active]="active.quote" (click)="toggleBlockquote(); closeGroup()" title="Citação" aria-label="Citação" [attr.aria-pressed]="active.quote"><i class="fa-solid fa-quote-left" aria-hidden="true"></i></button>
+              <button type="button" class="ds-md-tool" style="--i: 1" [class.is-active]="active.link" (click)="insertLink(); closeGroup()" title="Link (Ctrl+K)" aria-label="Link" [attr.aria-pressed]="active.link"><i class="fa-solid fa-link" aria-hidden="true"></i></button>
+              <button type="button" class="ds-md-tool" style="--i: 2" [class.is-active]="active.codeBlock" (click)="insertCodeBlock(); closeGroup()" title="Bloco de código" aria-label="Bloco de código" [attr.aria-pressed]="active.codeBlock"><i class="fa-solid fa-file-code" aria-hidden="true"></i></button>
+              <button type="button" class="ds-md-tool" style="--i: 3" (click)="insertHorizontalRule(); closeGroup()" title="Linha divisória" aria-label="Linha divisória"><i class="fa-solid fa-minus" aria-hidden="true"></i></button>
+              @if (enableFlowchart) {
+                <button type="button" class="ds-md-tool" style="--i: 4" (click)="openFlowchartEditor(); closeGroup()" title="Desenhar fluxograma / diagrama" aria-label="Fluxograma"><i class="fa-solid fa-diagram-project" aria-hidden="true"></i></button>
+              }
+            </div>
+
+            <div class="ds-md-col ds-md-col--table" role="group" aria-label="Inserir tabela" [class.is-open]="openGroup === 'table'" [style.--x.px]="colX['table']">
+              <div class="ds-md-grid" (mouseleave)="onGridHover(2, 2)">
+                @for (r of gridRows; track r) {
+                  <div class="ds-md-grid__row">
+                    @for (c of gridCols; track c) {
+                      <button type="button" class="ds-md-grid__cell" tabindex="-1"
+                        [class.is-on]="r <= hoverRow && c <= hoverCol"
+                        (mouseenter)="onGridHover(r, c)" (focus)="onGridHover(r, c)" (click)="onGridSelect(r, c)"
+                        [attr.aria-label]="r + ' por ' + c"></button>
+                    }
+                  </div>
+                }
+              </div>
+              <span class="ds-md-grid__size">{{ hoverRow }} × {{ hoverCol }}</span>
+            </div>
+
+            <div class="ds-md-col ds-md-col--color" role="group" aria-label="Cor do texto" [class.is-open]="openGroup === 'color'" [style.--x.px]="colX['color']">
+              @for (color of textColors; track color.value; let i = $index) {
+                <button type="button" class="ds-md-swatch" [style.--i]="i" [style.--swatch]="color.value"
+                  [class.is-active]="active.color === color.value.toLowerCase()"
+                  (click)="applyTextColor(color.value)" [title]="color.name" [attr.aria-label]="color.name"
+                  [attr.aria-pressed]="active.color === color.value.toLowerCase()"></button>
+              }
+              <button type="button" class="ds-md-swatch ds-md-swatch--none" [style.--i]="textColors.length"
+                [class.is-active]="!active.color" (click)="applyTextColor(null)" title="Cor padrão" aria-label="Cor padrão">
+                <i class="fa-solid fa-droplet-slash" aria-hidden="true"></i>
+              </button>
+            </div>
+
+            <div class="ds-md-col ds-md-col--custom" role="group" [attr.aria-label]="customToolsLabel" [class.is-open]="openGroup === 'custom'"
+              [style.--x.px]="colX['custom']" (click)="onCustomToolClick($event)">
+              <ng-content select="[dsMdTool]"></ng-content>
+            </div>
           </div>
-        </div>
+        }
 
         <!-- Área Editável WYSIWYG (o usuário já vê o resultado final estilizado) -->
         <div
@@ -274,7 +337,7 @@ let nextId = 0;
     },
   ],
 })
-export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
+export class MdEditorComponent implements AfterViewInit, OnDestroy, ControlValueAccessor {
   @Input() label?: string;
   @Input() placeholder = 'Escreva sua mensagem...';
   @Input() required = false;
@@ -282,12 +345,52 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
   @Input() error?: string;
   @Input() minHeight = '100px';
 
+  /**
+   * Onde a barra fica: `top` (padrão) no alto do editor, fixa ao rolar, com as colunas abrindo para baixo;
+   * `dock` flutuando no rodapé da tela (acima do teclado do celular), com as colunas subindo.
+   * No dock a posição é ajustada por `--ds-md-dock-bottom`, `--ds-md-dock-left` e `--ds-md-dock-right`.
+   */
+  @Input() toolbarPlacement: 'top' | 'dock' = 'top';
+  /** `auto`: recolhida no pincel no celular/tablet e sempre aberta no desktop. */
+  @Input() toolbarCollapse: 'auto' | 'always' | 'never' = 'auto';
+  /** Desenhador de fluxogramas na barra. Fluxogramas que já estão no texto continuam aparecendo. */
+  @Input() enableFlowchart = true;
+  /** Botão de esconder/mostrar o teclado virtual. `auto`: só em telas de toque. */
+  @Input() keyboardToggle: 'auto' | 'always' | 'never' = 'auto';
+  /** Cores da coluna "Cor do texto". */
+  @Input() textColors: MdEditorTextColor[] = MD_EDITOR_TEXT_COLORS;
+  /** Ícone (classes Font Awesome) e nome do grupo das ferramentas do projeto (`[dsMdTool]`). */
+  @Input() customToolsIcon = 'fa-solid fa-shapes';
+  @Input() customToolsLabel = 'Ferramentas';
+
+  /** O teclado virtual foi mostrado (true) ou escondido (false) pelo botão da barra. */
+  @Output() keyboardVisibleChange = new EventEmitter<boolean>();
+  /** A barra foi expandida (true) ou recolhida (false) pelo pincel. */
+  @Output() toolbarExpandedChange = new EventEmitter<boolean>();
+
   @ViewChild('editorArea') editorArea!: ElementRef<HTMLDivElement>;
+  @ContentChildren(MdEditorToolDirective, { descendants: true }) customTools?: QueryList<MdEditorToolDirective>;
 
   readonly inputId = `ds-md-editor-${++nextId}`;
 
+  private readonly zone = inject(NgZone);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  // Barra em ilha
+  openGroup: MdToolbarGroup | null = null;
+  colX: Record<string, number> = {};
+  compact = false;
+  touch = false;
+  expanded = false;
+  keyboardHidden = false;
+  keyboardInset = 0;
+  active: MdActiveFormat = { ...NO_FORMAT };
+  private togglingKeyboard = false;
+  private activeFrame = 0;
+  private cleanup: Array<() => void> = [];
+
   // Controle de tabela
-  showTableMenu = false;
   hoverRow = 2;
   hoverCol = 2;
   gridRows = [1, 2, 3, 4, 5, 6];
@@ -306,6 +409,43 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
   onChange: (val: string) => void = () => {};
   onTouched: () => void = () => {};
 
+  /** Compatibilidade: o seletor de tabela agora é a coluna `table` da barra. */
+  get showTableMenu(): boolean {
+    return this.openGroup === 'table';
+  }
+  set showTableMenu(open: boolean) {
+    if (open) this.openGroup = 'table';
+    else if (this.openGroup === 'table') this.openGroup = null;
+  }
+
+  get collapsible(): boolean {
+    return this.toolbarCollapse === 'always' || (this.toolbarCollapse === 'auto' && this.compact);
+  }
+
+  get isExpanded(): boolean {
+    return !this.collapsible || this.expanded;
+  }
+
+  get showKeyboardButton(): boolean {
+    return this.keyboardToggle === 'always' || (this.keyboardToggle === 'auto' && this.touch);
+  }
+
+  get hasCustomTools(): boolean {
+    return !!this.customTools?.length;
+  }
+
+  get blockLabel(): string {
+    switch (this.active.block) {
+      case 'h1': return 'H1';
+      case 'h2': return 'H2';
+      case 'h3': return 'H3';
+      case 'h4': return 'H4';
+      case 'h5': return 'H5';
+      case 'h6': return 'H6';
+      default: return 'P';
+    }
+  }
+
   ngAfterViewInit(): void {
     if (this.lastMarkdown && this.editorArea) {
       this.editorArea.nativeElement.innerHTML = this.markdownToHtml(this.lastMarkdown);
@@ -313,6 +453,244 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
     try {
       document.execCommand('defaultParagraphSeparator', false, 'p');
     } catch (e) {}
+    this.listen();
+  }
+
+  ngOnDestroy(): void {
+    cancelAnimationFrame(this.activeFrame);
+    this.cleanup.forEach((off) => off());
+    this.cleanup = [];
+  }
+
+  /** Seleção, cliques fora da coluna aberta, teclado virtual e tamanho da tela. Tudo fora do Angular. */
+  private listen(): void {
+    if (typeof window === 'undefined') return;
+    const compactQuery = window.matchMedia?.(COMPACT_QUERY);
+    const touchQuery = window.matchMedia?.(TOUCH_QUERY);
+    this.compact = !!compactQuery?.matches;
+    this.touch = !!touchQuery?.matches;
+    this.expanded = !this.compact;
+
+    const onSelection = () => this.scheduleActive();
+    const onPointer = (event: PointerEvent) => {
+      if (!this.openGroup) return;
+      const target = event.target as Element | null;
+      if (target?.closest?.('.ds-md-bar') && this.host.nativeElement.contains(target)) return;
+      this.zone.run(() => this.closeGroup());
+    };
+    const onViewport = () => this.updateKeyboardInset();
+    const onMedia = () => this.zone.run(() => {
+      const wasCompact = this.compact;
+      this.compact = !!compactQuery?.matches;
+      this.touch = !!touchQuery?.matches;
+      if (wasCompact !== this.compact) this.expanded = !this.compact;
+    });
+
+    this.zone.runOutsideAngular(() => {
+      document.addEventListener('selectionchange', onSelection);
+      document.addEventListener('pointerdown', onPointer, true);
+      window.visualViewport?.addEventListener('resize', onViewport);
+      window.visualViewport?.addEventListener('scroll', onViewport);
+      compactQuery?.addEventListener?.('change', onMedia);
+      touchQuery?.addEventListener?.('change', onMedia);
+    });
+    this.cleanup.push(() => {
+      document.removeEventListener('selectionchange', onSelection);
+      document.removeEventListener('pointerdown', onPointer, true);
+      window.visualViewport?.removeEventListener('resize', onViewport);
+      window.visualViewport?.removeEventListener('scroll', onViewport);
+      compactQuery?.removeEventListener?.('change', onMedia);
+      touchQuery?.removeEventListener?.('change', onMedia);
+    });
+    this.updateKeyboardInset();
+    this.cdr.detectChanges();
+    this.updateScrollHints();
+    this.cdr.detectChanges();
+  }
+
+  /** No navegador do celular o teclado cobre o rodapé: o dock sobe a altura dele. */
+  private updateKeyboardInset(): void {
+    if (this.toolbarPlacement !== 'dock') return;
+    const viewport = window.visualViewport;
+    const inset = viewport ? Math.max(0, Math.round(window.innerHeight - viewport.height - viewport.offsetTop)) : 0;
+    if (inset === this.keyboardInset) return;
+    this.zone.run(() => { this.keyboardInset = inset; });
+  }
+
+  private scheduleActive(): void {
+    cancelAnimationFrame(this.activeFrame);
+    this.activeFrame = requestAnimationFrame(() => this.refreshActive());
+  }
+
+  /** Marca os botões da formatação onde o cursor (ou o início da seleção) está. */
+  refreshActive(): void {
+    const area = this.editorArea?.nativeElement;
+    const selection = window.getSelection();
+    if (!area || !selection?.rangeCount) return;
+    const node = selection.anchorNode;
+    if (!node || !area.contains(node)) return;
+    const element = node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
+    const inside = (selector: string): Element | null => {
+      const found = element?.closest(selector) ?? null;
+      return found && found !== area && area.contains(found) ? found : null;
+    };
+    const blockEl = inside('h1, h2, h3, h4, h5, h6');
+    const next: MdActiveFormat = {
+      bold: !!inside('strong, b'),
+      italic: !!inside('em, i:not([class*="fa-"])'),
+      underline: !!inside('u') || this.commandState('underline'),
+      strike: !!inside('del, s, strike') || this.commandState('strikeThrough'),
+      code: !!inside('code') && !inside('pre'),
+      block: blockEl ? blockEl.tagName.toLowerCase() : 'p',
+      ul: !!inside('ul') && !inside('ol'),
+      ol: !!inside('ol'),
+      check: !!inside('.md-check-item'),
+      quote: !!inside('blockquote'),
+      codeBlock: !!inside('pre'),
+      link: !!inside('a'),
+      color: this.colorAt(element, area),
+    };
+    if (JSON.stringify(next) === JSON.stringify(this.active)) return;
+    this.zone.run(() => {
+      this.active = next;
+      this.cdr.markForCheck();
+    });
+  }
+
+  private commandState(command: string): boolean {
+    try {
+      return document.queryCommandState(command);
+    } catch {
+      return false;
+    }
+  }
+
+  /** Cor do texto mais próxima (span com `color` ou `<font color>`) em hexadecimal minúsculo. */
+  private colorAt(element: Element | null, area: HTMLElement): string | null {
+    let current: Element | null = element;
+    while (current && current !== area) {
+      const color = this.colorOfElement(current as HTMLElement);
+      if (color) return color === COLOR_SENTINEL ? null : color;
+      current = current.parentElement;
+    }
+    return null;
+  }
+
+  private colorOfElement(el: HTMLElement): string | null {
+    const tag = el.tagName?.toLowerCase();
+    const raw = tag === 'font' ? el.getAttribute('color') : tag === 'span' ? el.style?.color : '';
+    return raw ? toHex(raw) : null;
+  }
+
+  // ─────────────── Barra em ilha ───────────────
+
+  /** A pílula rola no celular quando os grupos não cabem: a coluna aberta acompanha o botão. */
+  canScrollLeft = false;
+  canScrollRight = false;
+
+  onTrackScroll(): void {
+    this.updateScrollHints();
+    if (this.openGroup) this.placeColumn(this.openGroup);
+  }
+
+  private updateScrollHints(): void {
+    const scroller = this.host.nativeElement.querySelector<HTMLElement>('.ds-md-bar__scroll');
+    if (!scroller) return;
+    this.canScrollLeft = scroller.scrollLeft > 2;
+    this.canScrollRight = scroller.scrollLeft + scroller.clientWidth < scroller.scrollWidth - 2;
+  }
+
+  private placeColumn(group: MdToolbarGroup): void {
+    const bar = this.host.nativeElement.querySelector<HTMLElement>('.ds-md-bar');
+    const button = bar?.querySelector<HTMLElement>(`[data-group="${group}"]`);
+    if (!bar || !button) return;
+    const b = button.getBoundingClientRect();
+    const r = bar.getBoundingClientRect();
+    this.colX = { ...this.colX, [group]: Math.round(b.left + b.width / 2 - r.left) };
+  }
+
+  toggleExpanded(): void {
+    this.expanded = !this.expanded;
+    if (!this.expanded) this.closeGroup();
+    else setTimeout(() => this.zone.run(() => this.updateScrollHints()), 450);
+    this.toolbarExpandedChange.emit(this.expanded);
+  }
+
+  toggleGroup(group: MdToolbarGroup, event: Event): void {
+    if (this.openGroup === group) {
+      this.closeGroup();
+      return;
+    }
+    const button = (event.currentTarget as HTMLElement | null) ?? null;
+    // Botão cortado na borda da pílula: rola até ele antes de abrir a coluna.
+    button?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+    this.placeColumn(group);
+    if (group === 'table') {
+      this.hoverRow = 2;
+      this.hoverCol = 2;
+    }
+    this.refreshActive();
+    this.openGroup = group;
+  }
+
+  closeGroup(): void {
+    if (this.openGroup) this.openGroup = null;
+  }
+
+  /** Um toque numa ferramenta do projeto fecha a coluna (a ação dela segue normalmente). */
+  onCustomToolClick(event: Event): void {
+    const button = (event.target as Element | null)?.closest('button');
+    if (button && !button.disabled) setTimeout(() => this.zone.run(() => this.closeGroup()));
+  }
+
+  /**
+   * Esconde ou mostra o teclado virtual sem perder o cursor: `inputmode="none"` mantém o foco e a seleção
+   * (dá para formatar com a tela inteira livre); de volta ao normal, o foco renovado reabre o teclado.
+   */
+  toggleKeyboard(): void {
+    const area = this.editorArea?.nativeElement;
+    if (!area) return;
+    const selection = window.getSelection();
+    const saved = selection?.rangeCount && area.contains(selection.anchorNode)
+      ? selection.getRangeAt(0).cloneRange() : null;
+    this.keyboardHidden = !this.keyboardHidden;
+    this.togglingKeyboard = true;
+    if (this.keyboardHidden) area.setAttribute('inputmode', 'none');
+    else area.removeAttribute('inputmode');
+    area.blur();
+    area.focus({ preventScroll: true });
+    if (saved && selection) {
+      selection.removeAllRanges();
+      selection.addRange(saved);
+    }
+    this.togglingKeyboard = false;
+    this.keyboardVisibleChange.emit(!this.keyboardHidden);
+  }
+
+  /** Cor do texto na seleção; `null` volta à cor padrão. */
+  applyTextColor(color: string | null): void {
+    this.focusEditor();
+    const area = this.editorArea?.nativeElement;
+    if (!area) return;
+    try {
+      document.execCommand('styleWithCSS', false, 'true');
+      document.execCommand('foreColor', false, color ?? COLOR_SENTINEL);
+    } finally {
+      document.execCommand('styleWithCSS', false, 'false');
+    }
+    if (!color) {
+      area.querySelectorAll<HTMLElement>('span[style], font[color]').forEach((el) => {
+        if (this.colorOfElement(el) !== COLOR_SENTINEL) return;
+        if (el.tagName.toLowerCase() === 'font') el.removeAttribute('color');
+        else el.style.removeProperty('color');
+        if (!el.getAttribute('style')?.trim() && el.attributes.length <= 1) {
+          el.replaceWith(...Array.from(el.childNodes));
+        }
+      });
+    }
+    this.closeGroup();
+    this.onEditorInput();
+    this.refreshActive();
   }
 
   // ─────────────── ControlValueAccessor ───────────────
@@ -346,10 +724,16 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
     const md = this.htmlToMarkdown(this.editorArea.nativeElement);
     this.lastMarkdown = md;
     this.onChange(md);
+    this.scheduleActive();
   }
 
   onEditorBlur(): void {
     this.onTouched();
+    // Saiu do editor (não foi o botão do teclado): na volta o teclado abre como sempre.
+    if (this.keyboardHidden && !this.togglingKeyboard) {
+      this.keyboardHidden = false;
+      this.editorArea?.nativeElement.removeAttribute('inputmode');
+    }
   }
 
   onEditorFocus(): void {
@@ -795,6 +1179,9 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
       } else if (event.key === 'i' || event.key === 'I') {
         event.preventDefault();
         this.exec('italic');
+      } else if (event.key === 'u' || event.key === 'U') {
+        event.preventDefault();
+        this.exec('underline');
       } else if (event.key === 'k' || event.key === 'K') {
         event.preventDefault();
         this.insertLink();
@@ -820,11 +1207,14 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
 
   exec(command: string, value: string | undefined = undefined): void {
     this.focusEditor();
+    try {
+      document.execCommand('styleWithCSS', false, 'false');
+    } catch (e) {}
     document.execCommand(command, false, value);
     this.onEditorInput();
   }
 
-  setHeading(tag: 'H1' | 'H2' | 'H3' | 'P'): void {
+  setHeading(tag: 'H1' | 'H2' | 'H3' | 'H4' | 'P'): void {
     this.focusEditor();
     const formatTag = tag === 'P' ? '<p>' : `<${tag.toLowerCase()}>`;
     document.execCommand('formatBlock', false, formatTag);
@@ -915,6 +1305,7 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
   toggleTableMenu(): void {
     this.showTableMenu = !this.showTableMenu;
   }
+
 
   onGridHover(r: number, c: number): void {
     this.hoverRow = r;
@@ -1090,6 +1481,18 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
     html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
     html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
+
+    // 7b. Sublinhado e cor do texto: o único HTML aceito além do <br>, com a cor restrita a hexadecimal.
+    // Do mais interno para fora, para spans aninhados; nunca atravessa linhas.
+    html = html.replace(/&lt;u&gt;([^\n]*?)&lt;\/u&gt;/g, '<u>$1</u>');
+    let previousColor = '';
+    while (previousColor !== html) {
+      previousColor = html;
+      html = html.replace(
+        /&lt;span style="color:\s*(#[0-9a-fA-F]{3,8})"&gt;((?:(?!&lt;span style=)[^\n])*?)&lt;\/span&gt;/g,
+        '<span style="color:$1">$2</span>'
+      );
+    }
 
     // 8. Checklists interativas
     html = html.replace(
@@ -1331,6 +1734,18 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
         const content = getChildrenMd().trim();
         return content ? `*${content}*` : '';
       }
+      case 'u': {
+        return wrapInline(getChildrenMd(), '<u>', '</u>');
+      }
+      case 'span':
+      case 'font': {
+        let content = getChildrenMd();
+        const decoration = `${el.style?.textDecorationLine || ''} ${el.style?.textDecoration || ''}`;
+        if (/underline/.test(decoration)) content = wrapInline(content, '<u>', '</u>');
+        const color = this.colorOfElement(el);
+        if (color && color !== COLOR_SENTINEL) content = wrapInline(content, `<span style="color:${color}">`, '</span>');
+        return content;
+      }
       case 'del':
       case 's':
       case 'strike': {
@@ -1523,4 +1938,21 @@ export class MdEditorComponent implements AfterViewInit, ControlValueAccessor {
     const text = clone.innerText !== undefined ? clone.innerText : (clone.textContent || '');
     return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   }
+}
+
+/** Envolve o conteúdo deixando os espaços das pontas fora das marcas (Markdown não fecha marca com espaço). */
+function wrapInline(content: string, open: string, close: string): string {
+  const match = /^(\s*)([\s\S]*?)(\s*)$/.exec(content);
+  if (!match || !match[2]) return content;
+  return `${match[1]}${open}${match[2]}${close}${match[3]}`;
+}
+
+/** `rgb(…)`, `#rgb` ou `#rrggbb` em `#rrggbb` minúsculo. */
+function toHex(raw: string): string | null {
+  const value = raw.trim().toLowerCase();
+  if (/^#[0-9a-f]{6}$/.test(value)) return value;
+  if (/^#[0-9a-f]{3}$/.test(value)) return '#' + value.slice(1).split('').map((c) => c + c).join('');
+  const rgb = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/.exec(value);
+  if (!rgb) return null;
+  return '#' + rgb.slice(1, 4).map((n) => Math.min(255, Number(n)).toString(16).padStart(2, '0')).join('');
 }

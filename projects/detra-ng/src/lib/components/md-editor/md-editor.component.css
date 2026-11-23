@@ -49,73 +49,499 @@
   color: var(--input-disabled-label, #94a3b8);
 }
 
-/* ── Toolbar ── */
-.editor-toolbar {
-  position: sticky;
-  top: var(--ds-md-toolbar-top, 0px);
+/* ── Barra em ilha (TK2026-01734) ──────────────────────────────────────────
+   Tokens para o projeto que usa o componente:
+   --ds-md-bar-bg / -fg / -muted / -border / -shadow / -blur / -hover
+   --ds-md-bar-accent / -on-accent / -accent-soft
+   --ds-md-dock-bottom / -left / -right (só no dock)                         */
+.ds-md-bar {
+  --_bg: var(--ds-md-bar-bg, var(--color-surface-raised, #ffffff));
+  --_fg: var(--ds-md-bar-fg, var(--theme-text-body, #334155));
+  --_muted: var(--ds-md-bar-muted, color-mix(in srgb, var(--_fg) 55%, transparent));
+  --_border: var(--ds-md-bar-border, rgba(15, 23, 42, 0.08));
+  --_hover: var(--ds-md-bar-hover, color-mix(in srgb, var(--_fg) 9%, transparent));
+  --_accent: var(--ds-md-bar-accent, var(--color-primary-500, #3b82f6));
+  --_on-accent: var(--ds-md-bar-on-accent, #ffffff);
+  --_accent-soft: var(--ds-md-bar-accent-soft, color-mix(in srgb, var(--_accent) 16%, transparent));
+  --_shadow: var(--ds-md-bar-shadow, 0 18px 44px rgba(15, 23, 42, 0.16), 0 2px 6px rgba(15, 23, 42, 0.08));
+  --_size: var(--ds-md-bar-size, 40px);
+  --_ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --_spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   z-index: 25;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-1, 4px);
-  padding: var(--space-2, 6px) var(--space-3, 10px);
-  background: var(--color-surface-raised, #ffffff);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-top-left-radius: 11px;
-  border-top-right-radius: 11px;
-  border-bottom: 1px solid var(--color-glass-border, rgba(0, 0, 0, 0.08));
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+  color: var(--_fg);
+  font-family: inherit;
 }
 
-.toolbar-group {
+/* No alto do editor, fixa ao rolar (padrão da lib). */
+.ds-md-bar--top {
+  position: sticky;
+  top: var(--ds-md-toolbar-top, 0px);
+  padding: 8px 8px 0;
+}
+
+/* Rodapé da tela, acima do teclado do celular. */
+.ds-md-bar--dock {
+  position: fixed;
+  z-index: 96;
+  left: var(--ds-md-dock-left, 12px);
+  right: var(--ds-md-dock-right, 12px);
+  bottom: calc(var(--ds-md-dock-bottom, 16px) + var(--ds-md-kb, 0px));
+  display: flex;
+  justify-content: var(--ds-md-dock-align, center);
+  pointer-events: none;
+  transition: bottom 0.28s var(--_ease), transform 0.32s var(--_ease);
+}
+
+.ds-md-bar--dock > * {
+  pointer-events: auto;
+}
+
+.ds-md-bar__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Pincel: abre e recolhe a pílula (celular); no desktop é a marca da barra. */
+.ds-md-brush {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: calc(var(--_size) + 8px);
+  height: calc(var(--_size) + 8px);
+  padding: 0;
+  border: 1px solid var(--_border);
+  border-radius: 50%;
+  background: var(--_bg);
+  color: var(--_fg);
+  box-shadow: var(--_shadow);
+  backdrop-filter: blur(var(--ds-md-bar-blur, 18px)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--ds-md-bar-blur, 18px)) saturate(1.4);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.25s ease, color 0.25s ease, transform 0.35s var(--_spring), box-shadow 0.25s ease;
+}
+
+.ds-md-brush i {
+  font-size: 16px;
+  transition: transform 0.45s var(--_spring);
+}
+
+.ds-md-brush.is-on {
+  background: var(--_accent);
+  color: var(--_on-accent);
+  border-color: transparent;
+}
+
+.ds-md-brush.is-on i {
+  transform: rotate(-28deg) translateY(-1px);
+}
+
+.ds-md-brush:active {
+  transform: scale(0.92);
+}
+
+.ds-md-brush:focus-visible {
+  outline: 2px solid var(--_accent);
+  outline-offset: 3px;
+}
+
+.ds-md-brush--static {
+  cursor: default;
+  background: var(--_accent);
+  color: var(--_on-accent);
+  border-color: transparent;
+}
+
+/* A pílula desliza para a direita a partir do pincel. */
+.ds-md-bar__reveal {
+  display: grid;
+  grid-template-columns: 0fr;
+  min-width: 0;
+  opacity: 0;
+  transform: translateX(-14px) scale(0.96);
+  transform-origin: left center;
+  transition: grid-template-columns 0.42s var(--_ease), opacity 0.24s ease, transform 0.42s var(--_ease);
+}
+
+.ds-md-bar.is-expanded .ds-md-bar__reveal {
+  grid-template-columns: 1fr;
+  opacity: 1;
+  transform: none;
+}
+
+.ds-md-bar__track {
+  min-width: 0;
+  padding: 4px;
+  overflow: hidden;
+  border: 1px solid var(--_border);
+  border-radius: 999px;
+  background: var(--_bg);
+  box-shadow: var(--_shadow);
+  backdrop-filter: blur(var(--ds-md-bar-blur, 18px)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--ds-md-bar-blur, 18px)) saturate(1.4);
+}
+
+.ds-md-bar__scroll {
+  --_fade-l: 0px;
+  --_fade-r: 0px;
   display: flex;
   align-items: center;
   gap: 2px;
+  min-width: 0;
+  border-radius: 999px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 var(--_fade-l), #000 calc(100% - var(--_fade-r)), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 var(--_fade-l), #000 calc(100% - var(--_fade-r)), transparent 100%);
 }
 
-.toolbar-separator {
+.ds-md-bar__track.can-left .ds-md-bar__scroll {
+  --_fade-l: 22px;
+}
+
+.ds-md-bar__track.can-right .ds-md-bar__scroll {
+  --_fade-r: 22px;
+}
+
+.ds-md-bar__scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.ds-md-bar:not(.is-expanded) .ds-md-bar__track {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.ds-md-bar__sep {
+  flex: none;
   width: 1px;
   height: 22px;
-  background: var(--surface-border-strong, #cbd5e1);
-  margin: 0 var(--space-1, 4px);
-  opacity: 0.6;
+  margin: 0 4px;
+  background: var(--_border);
+  opacity: 0.9;
 }
 
-.toolbar-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--theme-text-body, #475569);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
+/* Botões dos grupos e das colunas. */
+.ds-md-group,
+.ds-md-tool,
+:host ::ng-deep .ds-md-tool {
   position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: var(--_size);
+  height: var(--_size);
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--_fg);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.25s var(--_spring), box-shadow 0.2s ease;
 }
 
-.toolbar-btn:hover {
-  background: var(--color-primary-500, #3b82f6);
-  color: #ffffff;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(var(--color-primary-500-rgb, 59, 130, 246), 0.3);
+.ds-md-group i,
+.ds-md-tool i,
+:host ::ng-deep .ds-md-tool i {
+  font-size: 14px;
 }
 
-.toolbar-btn:active {
-  transform: translateY(0);
+.ds-md-bar.is-expanded .ds-md-group {
+  animation: ds-md-pop-in 0.42s var(--_ease) both;
+  animation-delay: calc(var(--i, 0) * 28ms + 60ms);
 }
 
-.toolbar-btn i {
+@keyframes ds-md-pop-in {
+  from {
+    opacity: 0;
+    transform: translateX(-10px) scale(0.86);
+  }
+}
+
+@media (hover: hover) {
+  .ds-md-group:hover,
+  .ds-md-tool:hover,
+  :host ::ng-deep .ds-md-tool:hover {
+    background: var(--_hover);
+  }
+}
+
+.ds-md-group:active,
+.ds-md-tool:active,
+:host ::ng-deep .ds-md-tool:active {
+  transform: scale(0.9);
+}
+
+.ds-md-group:focus-visible,
+.ds-md-tool:focus-visible,
+:host ::ng-deep .ds-md-tool:focus-visible {
+  outline: 2px solid var(--_accent);
+  outline-offset: 1px;
+}
+
+/* Grupo com formatação ativa: um ponto de destaque embaixo. */
+.ds-md-group.is-active::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--_accent);
+  transform: translateX(-50%);
+}
+
+.ds-md-group.is-open {
+  background: var(--_accent);
+  color: var(--_on-accent);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--_accent) 35%, transparent);
+}
+
+.ds-md-group.is-open::after {
+  background: var(--_on-accent);
+}
+
+.ds-md-group--text {
   font-size: 13px;
+  font-weight: 900;
+}
+
+.ds-md-group--color {
+  align-content: center;
+  gap: 1px;
+}
+
+.ds-md-group--color i {
+  font-size: 12.5px;
+  line-height: 1;
+}
+
+.ds-md-group__ink {
+  display: block;
+  width: 15px;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #e11d48, #ca8a04, #16a34a, #2563eb, #7c3aed);
+}
+
+.ds-md-group--color.is-active::after {
+  display: none;
+}
+
+.ds-md-group--keyboard {
+  align-content: center;
+  gap: 0;
+}
+
+.ds-md-group__chevron {
+  display: block;
+  line-height: 1;
+  margin-top: -1px;
+}
+
+.ds-md-group__chevron i {
+  font-size: 8px;
+  opacity: 0.8;
+}
+
+.ds-md-group--keyboard.is-active {
+  background: var(--_accent-soft);
+  color: var(--_accent);
+}
+
+.ds-md-group--keyboard.is-active::after {
+  display: none;
+}
+
+/* Coluna de opções de um grupo: sobe a partir do botão (no topo, desce). */
+.ds-md-col {
+  position: absolute;
+  left: var(--x, 50%);
+  z-index: 2;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 3px;
+  padding: 5px;
+  border: 1px solid var(--_border);
+  border-radius: calc(var(--_size) / 2 + 5px);
+  background: var(--_bg);
+  box-shadow: var(--_shadow);
+  backdrop-filter: blur(var(--ds-md-bar-blur, 18px)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--ds-md-bar-blur, 18px)) saturate(1.4);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(10px) scale(0.92);
+  transform-origin: bottom center;
+  transition: opacity 0.18s ease, transform 0.3s var(--_ease), visibility 0s linear 0.3s;
+}
+
+.ds-md-bar--dock .ds-md-col {
+  bottom: calc(100% + 10px);
+}
+
+.ds-md-bar--top .ds-md-col {
+  top: calc(100% + 8px);
+  flex-direction: column;
+  transform: translateX(-50%) translateY(-10px) scale(0.92);
+  transform-origin: top center;
+}
+
+.ds-md-col.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0) scale(1);
+  transition: opacity 0.2s ease, transform 0.42s var(--_spring), visibility 0s;
+}
+
+.ds-md-col > *,
+:host ::ng-deep .ds-md-col > * {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.16s ease, transform 0.3s var(--_ease);
+}
+
+.ds-md-col.is-open > *,
+:host ::ng-deep .ds-md-col.is-open > * {
+  opacity: 1;
+  transform: none;
+  transition-delay: calc(var(--i, 0) * 26ms + 40ms);
+}
+
+:host ::ng-deep .ds-md-col--custom > :nth-child(1) { --i: 0; }
+:host ::ng-deep .ds-md-col--custom > :nth-child(2) { --i: 1; }
+:host ::ng-deep .ds-md-col--custom > :nth-child(3) { --i: 2; }
+:host ::ng-deep .ds-md-col--custom > :nth-child(4) { --i: 3; }
+:host ::ng-deep .ds-md-col--custom > :nth-child(5) { --i: 4; }
+:host ::ng-deep .ds-md-col--custom > :nth-child(6) { --i: 5; }
+
+.ds-md-tool.is-active,
+:host ::ng-deep .ds-md-tool.is-active {
+  background: var(--_accent);
+  color: var(--_on-accent);
+}
+
+.ds-md-tool--text {
+  font-size: 12.5px;
+  font-weight: 900;
+}
+
+.ds-md-tool--quiet {
+  color: var(--_muted);
+}
+
+/* Tabela: a grade sobe como uma coluna larga. */
+.ds-md-col--table {
+  gap: 6px;
+  padding: 10px;
+  border-radius: 18px;
+}
+
+.ds-md-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ds-md-grid__row {
+  display: flex;
+  gap: 4px;
+}
+
+.ds-md-grid__cell {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1.5px solid var(--_border);
+  border-radius: 5px;
+  background: var(--_hover);
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease;
+}
+
+.ds-md-grid__cell.is-on {
+  border-color: var(--_accent);
+  background: var(--_accent);
+}
+
+.ds-md-grid__size {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--_muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Cores: bolinhas que sobem. */
+.ds-md-col--color {
+  gap: 6px;
+  padding: 8px 6px;
+}
+
+.ds-md-swatch {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  background: var(--swatch);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  transition: transform 0.25s var(--_spring), box-shadow 0.2s ease;
+}
+
+.ds-md-swatch:hover {
+  transform: scale(1.12);
+}
+
+.ds-md-swatch.is-active {
+  box-shadow: 0 0 0 2px var(--_bg), 0 0 0 4px var(--swatch, var(--_accent));
+}
+
+.ds-md-swatch--none {
+  background: var(--_hover);
+  color: var(--_fg);
+  --swatch: var(--_fg);
+}
+
+.ds-md-swatch--none i {
+  font-size: 12px;
+}
+
+/* Celular: botões maiores para o dedo. */
+.ds-md-bar.is-compact {
+  --_size: var(--ds-md-bar-size, 42px);
+}
+
+@media (max-width: 380px) {
+  .ds-md-bar.is-compact {
+    --_size: var(--ds-md-bar-size, 38px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-md-bar *,
+  .ds-md-bar {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* ── Área de Edição WYSIWYG (Visual Document) ── */
@@ -353,88 +779,11 @@
   opacity: 0.7;
 }
 
-/* ── Table Picker Dropdown ── */
-.table-picker-wrapper {
-  position: relative;
-  display: inline-block;
-}
-
-.table-menu-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  z-index: 100;
-  min-width: 170px;
-  background: var(--color-surface-raised, #ffffff);
-  border: 1px solid var(--color-glass-border, rgba(0, 0, 0, 0.12));
-  border-radius: 12px;
-  box-shadow:
-    var(--shadow-glass, 0 8px 32px rgba(0, 0, 0, 0.12)),
-    0 4px 16px rgba(0, 0, 0, 0.08);
-  padding: var(--space-2, 8px);
-  margin-top: 4px;
-  animation: slideFadeIn 0.2s ease-out;
-}
-
-@keyframes slideFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-4px) scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.table-grid-picker {
-  padding: var(--space-1, 4px);
-}
-
-.grid-picker-header {
-  font-size: var(--text-xs, 11px);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--theme-text-muted, #888);
-  margin-bottom: var(--space-2, 8px);
-}
-
-.grid-picker-box {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  background: var(--color-surface, #f8fafc);
-  padding: var(--space-2, 6px);
-  border-radius: 8px;
-  border: 1px solid var(--color-glass-border, #e2e8f0);
-}
-
-.grid-picker-row {
-  display: flex;
-  gap: 4px;
-}
-
-.grid-picker-cell {
-  width: 18px;
-  height: 18px;
-  border: 1px solid var(--surface-border-strong, #cbd5e1);
-  border-radius: 3px;
-  cursor: pointer;
-  transition: background-color 0.12s ease, border-color 0.12s ease;
-}
-
-.grid-picker-cell.active {
-  background-color: var(--color-primary-400, #60a5fa);
-  border-color: var(--color-primary-500, #3b82f6);
-}
-
-.grid-picker-footer {
-  text-align: center;
-  font-size: var(--text-xs, 11px);
-  font-weight: 700;
-  color: var(--color-primary-500, #3b82f6);
-  margin-top: var(--space-2, 6px);
+/* Sublinhado e cor do texto */
+:host ::ng-deep .editor-area u {
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
 }
 
 /* ── Error ── */
