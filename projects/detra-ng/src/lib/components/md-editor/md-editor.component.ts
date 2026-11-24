@@ -57,6 +57,42 @@ export const MD_EDITOR_TEXT_COLORS: MdEditorTextColor[] = [
   { name: 'Cinza', value: '#64748b' },
 ];
 
+/** Dados da imagem já convertida para JPEG, entregues ao `imageUpload`. */
+export interface MdEditorImageMeta {
+  width: number;
+  height: number;
+  /** Tamanho do JPEG em bytes. */
+  size: number;
+  /** Nome do arquivo de origem (vazio quando colada). */
+  name: string;
+  /** Como a imagem chegou: botão da barra, colada, arrastada de fora ou inserida pelo teclado do celular. */
+  source: 'upload' | 'paste' | 'drop' | 'keyboard';
+}
+
+/**
+ * Envia o JPEG e devolve o endereço que fica no Markdown (ex.: `note-image://<id>`).
+ * `progress` recebe de 0 a 1. Rejeitar a promise tira a imagem da nota e emite `imageError`.
+ */
+export type MdEditorImageUploader = (
+  image: Blob,
+  meta: MdEditorImageMeta,
+  progress: (fraction: number) => void,
+) => Promise<string>;
+
+/** Troca o endereço do Markdown por um que o `<img>` consegue mostrar (ex.: blob: baixado com o token). */
+export type MdEditorImageResolver = (src: string) => string | Promise<string>;
+
+export interface MdEditorImageError {
+  reason: 'unsupported' | 'conversion' | 'upload';
+  name?: string;
+  error?: unknown;
+}
+
+/** Endereços aceitos em `![](...)`: nunca `javascript:` ou caminhos relativos ao app. */
+const SAFE_IMAGE_SRC = /^(?:https?:\/\/|note-image:\/\/|data:image\/(?:png|jpe?g|gif|webp);base64,)/i;
+const IMAGE_MD = /!\[([^\]\n]*)\]\(\s*<?([^)\s>]+)>?(?:\s+"[^"\n]*")?\s*\)/g;
+const IMAGE_MIN_WIDTH = 64;
+
 type MdToolbarGroup = 'style' | 'block' | 'list' | 'insert' | 'table' | 'color' | 'custom';
 
 /** Formatação onde está o cursor: deixa os botões correspondentes marcados. */
@@ -189,6 +225,13 @@ const COLOR_SENTINEL = '#010203';
                     <i class="fa-solid fa-table-cells" aria-hidden="true"></i>
                   </button>
 
+                  @if (imageUpload) {
+                    <button type="button" class="ds-md-group ds-md-group--image" style="--i: 5" data-group="image"
+                      (click)="pickImage()" [attr.aria-label]="imageLabel" [title]="imageHint">
+                      <i class="fa-solid fa-image" aria-hidden="true"></i>
+                    </button>
+                  }
+
                   <button type="button" class="ds-md-group ds-md-group--color" style="--i: 5" data-group="color"
                     [class.is-open]="openGroup === 'color'"
                     [class.is-active]="!!active.color"
@@ -311,7 +354,16 @@ const COLOR_SENTINEL = '#010203';
           (blur)="onEditorBlur()"
           (paste)="onEditorPaste($event)"
           (keydown)="onEditorKeydown($event)"
+          (beforeinput)="onEditorBeforeInput($event)"
+          (dragover)="onEditorDragOver($event)"
+          (drop)="onEditorDrop($event)"
+          (dragstart)="onEditorDragStart($event)"
         ></div>
+
+        @if (imageUpload) {
+          <input #imageInput type="file" accept="image/*" multiple class="ds-md-image-input" tabindex="-1" aria-hidden="true"
+            (change)="onImagePicked($event)" />
+        }
 
         <!-- Modal do Desenhador de Fluxogramas -->
         <ds-flowchart-editor
@@ -363,12 +415,41 @@ export class MdEditorComponent implements AfterViewInit, OnDestroy, ControlValue
   @Input() customToolsIcon = 'fa-solid fa-shapes';
   @Input() customToolsLabel = 'Ferramentas';
 
+  /**
+   * Imagens (TK2026-01756). Com `imageUpload` a barra ganha o botão Imagem e o editor aceita colar e
+   * arrastar imagens. Toda imagem é convertida para JPEG no aparelho (lado maior até `imageMaxDimension`)
+   * antes de chegar aqui; o que a função devolver vai para o Markdown como `![alt|largura](src)`.
+   */
+  @Input() imageUpload?: MdEditorImageUploader;
+  /** Endereço exibível para o `src` do Markdown. Sem ele, só `http(s)` e `data:` aparecem. */
+  @Input() imageResolver?: MdEditorImageResolver;
+  @Input() imageMaxDimension = 2560;
+  @Input() imageQuality = 0.85;
+  @Input() imageLabel = 'Inserir imagem';
+  @Input() imageHint = 'Inserir imagem (ou cole da área de transferência)';
+  /** Rótulos da mini barra da imagem selecionada (para traduzir no projeto). */
+  @Input() imageTexts: Record<'small' | 'medium' | 'full' | 'remove' | 'move' | 'resize' | 'close', string> = {
+    small: 'Pequena', medium: 'Média', full: 'Largura total', remove: 'Remover imagem',
+    move: 'Arraste para mover', resize: 'Arraste para redimensionar', close: 'Fechar',
+  };
+  /** Falha ao converter ou enviar uma imagem (a imagem sai da nota). */
+  @Output() imageError = new EventEmitter<MdEditorImageError>();
+
   /** O teclado virtual foi mostrado (true) ou escondido (false) pelo botão da barra. */
   @Output() keyboardVisibleChange = new EventEmitter<boolean>();
   /** A barra foi expandida (true) ou recolhida (false) pelo pincel. */
   @Output() toolbarExpandedChange = new EventEmitter<boolean>();
 
   @ViewChild('editorArea') editorArea!: ElementRef<HTMLDivElement>;
+  @ViewChild('imageInput') imageInput?: ElementRef<HTMLInputElement>;
+
+  // Imagens
+  private imageRange: Range | null = null;
+  private readonly resolvedImages = new Map<string, string>();
+  private readonly localImageUrls = new Set<string>();
+  private selectedImage: HTMLElement | null = null;
+  private imageGesture: ImageGesture | null = null;
+  private lightbox: HTMLElement | null = null;
   @ContentChildren(MdEditorToolDirective, { descendants: true }) customTools?: QueryList<MdEditorToolDirective>;
 
   readonly inputId = `ds-md-editor-${++nextId}`;
@@ -449,6 +530,7 @@ export class MdEditorComponent implements AfterViewInit, OnDestroy, ControlValue
   ngAfterViewInit(): void {
     if (this.lastMarkdown && this.editorArea) {
       this.editorArea.nativeElement.innerHTML = this.markdownToHtml(this.lastMarkdown);
+      this.hydrateImages();
     }
     try {
       document.execCommand('defaultParagraphSeparator', false, 'p');
@@ -460,6 +542,10 @@ export class MdEditorComponent implements AfterViewInit, OnDestroy, ControlValue
     cancelAnimationFrame(this.activeFrame);
     this.cleanup.forEach((off) => off());
     this.cleanup = [];
+    this.endImageGesture(false);
+    this.closeLightbox();
+    this.localImageUrls.forEach((url) => URL.revokeObjectURL(url));
+    this.localImageUrls.clear();
   }
 
   /** Seleção, cliques fora da coluna aberta, teclado virtual e tamanho da tela. Tudo fora do Angular. */
@@ -486,7 +572,10 @@ export class MdEditorComponent implements AfterViewInit, OnDestroy, ControlValue
       if (wasCompact !== this.compact) this.expanded = !this.compact;
     });
 
+    const area = this.editorArea?.nativeElement;
+    const onImageDown = (event: PointerEvent) => this.onImagePointerDown(event);
     this.zone.runOutsideAngular(() => {
+      area?.addEventListener('pointerdown', onImageDown);
       document.addEventListener('selectionchange', onSelection);
       document.addEventListener('pointerdown', onPointer, true);
       window.visualViewport?.addEventListener('resize', onViewport);
@@ -495,6 +584,7 @@ export class MdEditorComponent implements AfterViewInit, OnDestroy, ControlValue
       touchQuery?.addEventListener?.('change', onMedia);
     });
     this.cleanup.push(() => {
+      area?.removeEventListener('pointerdown', onImageDown);
       document.removeEventListener('selectionchange', onSelection);
       document.removeEventListener('pointerdown', onPointer, true);
       window.visualViewport?.removeEventListener('resize', onViewport);
@@ -701,7 +791,9 @@ export class MdEditorComponent implements AfterViewInit, OnDestroy, ControlValue
 
     this.lastMarkdown = md;
     if (this.editorArea) {
+      this.selectedImage = null;
       this.editorArea.nativeElement.innerHTML = this.markdownToHtml(md);
+      this.hydrateImages();
     }
   }
 
@@ -721,6 +813,8 @@ export class MdEditorComponent implements AfterViewInit, OnDestroy, ControlValue
 
   onEditorInput(): void {
     if (!this.editorArea) return;
+    this.adoptRawImages();
+    this.hydrateImages();
     const md = this.htmlToMarkdown(this.editorArea.nativeElement);
     this.lastMarkdown = md;
     this.onChange(md);
@@ -744,6 +838,11 @@ export class MdEditorComponent implements AfterViewInit, OnDestroy, ControlValue
 
   onEditorPaste(event: ClipboardEvent): void {
     event.preventDefault();
+    const images = this.pastedImages(event.clipboardData);
+    if (images.length) {
+      this.insertImages(images, 'paste', this.currentRange());
+      return;
+    }
     const text = event.clipboardData?.getData('text/plain') || '';
     if (!text) return;
 
@@ -763,7 +862,7 @@ export class MdEditorComponent implements AfterViewInit, OnDestroy, ControlValue
 
     // Se o editor estiver vazio, define o conteúdo diretamente
     const currentText = this.editorArea?.nativeElement.textContent?.trim() || '';
-    if (!currentText && this.editorArea) {
+    if (!currentText && this.editorArea && !this.editorArea.nativeElement.querySelector('.md-image')) {
       this.editorArea.nativeElement.innerHTML = html;
     } else {
       this.insertHtmlAtSelection(html);
@@ -773,11 +872,571 @@ export class MdEditorComponent implements AfterViewInit, OnDestroy, ControlValue
     this.onEditorInput();
   }
 
+  // ─────────────── Imagens (TK2026-01756) ───────────────
+
+  /** Botão Imagem: guarda onde estava o cursor e abre o seletor (no celular: galeria ou câmera). */
+  pickImage(): void {
+    this.imageRange = this.currentRange();
+    this.closeGroup();
+    const input = this.imageInput?.nativeElement;
+    if (!input) return;
+    input.value = '';
+    input.click();
+  }
+
+  onImagePicked(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files || []);
+    input.value = '';
+    const range = this.imageRange;
+    this.imageRange = null;
+    if (files.length) void this.insertImages(files, 'upload', range);
+  }
+
+  onEditorBeforeInput(event: InputEvent): void {
+    // Teclados do Android que inserem imagem (GIF/figurinha/área de transferência) mandam o arquivo aqui.
+    const files = imageFiles(event.dataTransfer);
+    if (!files.length || !this.imageUpload || this.disabled) return;
+    event.preventDefault();
+    const target = event.getTargetRanges?.()[0];
+    let range: Range | null = null;
+    if (target) {
+      range = document.createRange();
+      range.setStart(target.endContainer, target.endOffset);
+      range.collapse(true);
+    }
+    void this.insertImages(files, 'keyboard', range ?? this.currentRange());
+  }
+
+  onEditorDragOver(event: DragEvent): void {
+    if (!this.imageUpload || this.disabled || !Array.from(event.dataTransfer?.types || []).includes('Files')) return;
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+  }
+
+  /** A imagem da nota se move pelo gesto próprio (funciona no toque); o arrastar nativo fica desligado. */
+  onEditorDragStart(event: DragEvent): void {
+    if ((event.target as HTMLElement | null)?.closest?.('.md-image')) event.preventDefault();
+  }
+
+  /** Imagens arrastadas do computador entram onde foram soltas. */
+  onEditorDrop(event: DragEvent): void {
+    if (!this.imageUpload || this.disabled) return;
+    const files = imageFiles(event.dataTransfer);
+    if (!files.length) return;
+    event.preventDefault();
+    void this.insertImages(files, 'drop', this.rangeFromPoint(event.clientX, event.clientY));
+  }
+
+  /** Imagens da área de transferência. Texto com imagem (ex.: cópia do Word) continua colando como texto. */
+  private pastedImages(data: DataTransfer | null): Blob[] {
+    if (!data || !this.imageUpload || this.disabled) return [];
+    const images = imageFiles(data);
+    if (!images.length) return [];
+    const text = data.getData('text/plain') || '';
+    if (text.trim() && !onlyImagesInHtml(data.getData('text/html') || '')) return [];
+    return images;
+  }
+
+  /**
+   * Converte cada arquivo para JPEG, mostra a imagem na hora (com a barra de envio) no lugar do cursor e
+   * troca pelo endereço definitivo quando o envio termina. Se algo falhar, a imagem sai e `imageError` avisa.
+   */
+  async insertImages(files: Blob[], source: MdEditorImageMeta['source'], range: Range | null): Promise<void> {
+    const upload = this.imageUpload;
+    const area = this.editorArea?.nativeElement;
+    if (!upload || !area || this.disabled) return;
+    let at = range;
+    for (const file of files) {
+      const name = (file as File).name || '';
+      if (!isImageBlob(file)) {
+        this.zone.run(() => this.imageError.emit({ reason: 'unsupported', name }));
+        continue;
+      }
+      const holder = createImageElement('', cleanAlt(name.replace(/\.[a-z0-9]+$/i, '')), null);
+      holder.classList.add('is-uploading');
+      at = this.placeImage(holder, at);
+      const img = holder.querySelector('img') as HTMLImageElement;
+      let jpeg: { blob: Blob; width: number; height: number };
+      try {
+        jpeg = await toJpeg(file, this.imageMaxDimension, this.imageQuality);
+      } catch (error) {
+        holder.remove();
+        this.zone.run(() => {
+          this.imageError.emit({ reason: 'conversion', name, error });
+          this.onEditorInput();
+        });
+        continue;
+      }
+      const url = URL.createObjectURL(jpeg.blob);
+      this.localImageUrls.add(url);
+      img.width = jpeg.width;
+      img.height = jpeg.height;
+      img.src = url;
+      try {
+        const src = await upload(jpeg.blob, { width: jpeg.width, height: jpeg.height, size: jpeg.blob.size, name, source },
+          (fraction) => holder.style.setProperty('--md-image-progress', String(Math.max(0, Math.min(1, fraction || 0)))));
+        if (!src || !SAFE_IMAGE_SRC.test(src)) throw new Error('Endereço da imagem inválido');
+        this.resolvedImages.set(src, url);
+        holder.dataset['src'] = src;
+        img.dataset['for'] = src;
+        holder.classList.remove('is-uploading');
+      } catch (error) {
+        holder.remove();
+        this.zone.run(() => this.imageError.emit({ reason: 'upload', name, error }));
+      }
+      // A nota pode ter sido trocada durante o envio: aí não há o que salvar aqui.
+      if (area.isConnected && (area.contains(holder) || !holder.isConnected)) {
+        this.zone.run(() => this.onEditorInput());
+      }
+    }
+  }
+
+  /** Põe a imagem no ponto do cursor (ou no fim da nota) e devolve o ponto logo depois dela. */
+  private placeImage(node: HTMLElement, range: Range | null): Range {
+    const area = this.editorArea.nativeElement;
+    let target = range && area.contains(range.commonAncestorContainer) ? range.cloneRange() : null;
+    if (target) {
+      target.collapse(false);
+      // Dentro de código, fluxograma ou outra imagem não: logo depois do bloco.
+      const host = elementOf(target.startContainer)?.closest('pre, .md-flowchart-card, .md-image, table');
+      if (host && area.contains(host)) {
+        target = document.createRange();
+        target.setStartAfter(host);
+        target.collapse(true);
+      }
+    }
+    if (!target) {
+      const p = document.createElement('p');
+      area.appendChild(p);
+      target = document.createRange();
+      target.setStart(p, 0);
+      target.collapse(true);
+    }
+    if (target.startContainer === area) {
+      const p = document.createElement('p');
+      target.insertNode(p);
+      p.appendChild(node);
+    } else {
+      target.insertNode(node);
+    }
+    const after = document.createRange();
+    after.setStartAfter(node);
+    after.collapse(true);
+    const selection = window.getSelection();
+    if (selection && document.activeElement === area) {
+      selection.removeAllRanges();
+      selection.addRange(after);
+    }
+    return after;
+  }
+
+  /** `<img>` que o navegador ou o teclado inseriu direto no texto: vira imagem da nota (enviada) ou sai. */
+  private adoptRawImages(): void {
+    const area = this.editorArea?.nativeElement;
+    if (!area) return;
+    const raw = Array.from(area.querySelectorAll('img')).filter((img) => !img.closest('.md-image'));
+    for (const img of raw) {
+      const src = img.getAttribute('src') || '';
+      const range = document.createRange();
+      range.setStartBefore(img);
+      range.collapse(true);
+      img.remove();
+      if (!this.imageUpload || !/^(?:data:image\/|blob:)/i.test(src)) continue;
+      fetch(src)
+        .then((response) => response.blob())
+        .then((blob) => this.insertImages([blob], 'keyboard', range))
+        .catch(() => undefined);
+    }
+  }
+
+  /** Busca o endereço exibível de cada imagem (uma vez por `src`) e marca as que falharem. */
+  private hydrateImages(): void {
+    const area = this.editorArea?.nativeElement;
+    if (!area) return;
+    area.querySelectorAll<HTMLElement>('.md-image[data-src]').forEach((el) => {
+      const src = el.dataset['src'] || '';
+      const img = el.querySelector('img');
+      if (!img || !src || img.dataset['for'] === src) return;
+      img.dataset['for'] = src;
+      el.classList.remove('is-broken');
+      const known = this.resolvedImages.get(src);
+      if (known) {
+        img.src = known;
+        return;
+      }
+      el.classList.add('is-loading');
+      const done = () => el.classList.remove('is-loading');
+      img.addEventListener('load', done, { once: true });
+      img.addEventListener('error', () => { done(); el.classList.add('is-broken'); }, { once: true });
+      Promise.resolve()
+        .then(() => (this.imageResolver ? this.imageResolver(src) : /^(?:https?:|data:)/i.test(src) ? src : ''))
+        .then((url) => {
+          if (!url) throw new Error('Imagem indisponível');
+          this.resolvedImages.set(src, url);
+          if (img.dataset['for'] === src) img.src = url;
+        })
+        .catch(() => {
+          done();
+          if (img.dataset['for'] === src) el.classList.add('is-broken');
+        });
+    });
+  }
+
+  private currentRange(): Range | null {
+    const area = this.editorArea?.nativeElement;
+    const selection = window.getSelection();
+    if (!area || !selection?.rangeCount) return null;
+    const range = selection.getRangeAt(0);
+    return area.contains(range.commonAncestorContainer) ? range.cloneRange() : null;
+  }
+
+  /** Seleciona a imagem: alças laterais e a mini barra (tamanhos e remover). `null` solta. */
+  private selectImage(el: HTMLElement | null, placeCaret = false): void {
+    if (this.selectedImage === el) return;
+    if (this.selectedImage) {
+      this.selectedImage.classList.remove('is-selected', 'is-narrow');
+      this.selectedImage.querySelector('.md-image__bar')?.remove();
+    }
+    this.selectedImage = el;
+    if (!el) return;
+    el.classList.add('is-selected');
+    el.appendChild(this.imageBar());
+    el.classList.toggle('is-narrow', el.getBoundingClientRect().width < 220);
+    if (placeCaret) {
+      const area = this.editorArea.nativeElement;
+      area.focus({ preventScroll: true });
+      const range = document.createRange();
+      range.setStartAfter(el);
+      range.collapse(true);
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    }
+  }
+
+  private imageBar(): HTMLElement {
+    const t = this.imageTexts;
+    const bar = document.createElement('span');
+    bar.className = 'md-image__bar';
+    bar.setAttribute('contenteditable', 'false');
+    const size = (action: string, label: string, fill: number) =>
+      `<button type="button" class="md-image__size" data-image-action="${action}" title="${escapeAttr(label)}" aria-label="${escapeAttr(label)}">` +
+      `<span class="md-image__glyph" style="--fill:${fill}"></span></button>`;
+    bar.innerHTML =
+      size('small', t.small, 34) + size('medium', t.medium, 58) + size('full', t.full, 100) +
+      `<span class="md-image__sep" aria-hidden="true"></span>` +
+      `<button type="button" class="md-image__remove" data-image-action="remove" title="${escapeAttr(t.remove)}" aria-label="${escapeAttr(t.remove)}">` +
+      `<i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>`;
+    return bar;
+  }
+
+  private imageAction(el: HTMLElement, action: string): void {
+    const width = this.contentWidth();
+    if (action === 'remove') {
+      this.removeImage(el);
+      return;
+    }
+    const fraction = action === 'small' ? 1 / 3 : action === 'medium' ? 1 / 2 : 1;
+    setImageWidth(el, Math.max(IMAGE_MIN_WIDTH, Math.round(width * fraction)));
+    el.classList.toggle('is-narrow', el.getBoundingClientRect().width < 220);
+    this.onEditorInput();
+  }
+
+  private removeImage(el: HTMLElement): void {
+    const parent = el.parentElement;
+    if (this.selectedImage === el) this.selectedImage = null;
+    el.remove();
+    if (parent && parent !== this.editorArea.nativeElement && parent.tagName === 'P' && !parent.childNodes.length) {
+      parent.appendChild(document.createElement('br'));
+    }
+    this.onEditorInput();
+  }
+
+  /** Largura útil do texto (sem o padding do editor). */
+  private contentWidth(): number {
+    const area = this.editorArea.nativeElement;
+    const style = getComputedStyle(area);
+    return Math.max(IMAGE_MIN_WIDTH,
+      area.clientWidth - (parseFloat(style.paddingLeft) || 0) - (parseFloat(style.paddingRight) || 0));
+  }
+
+  /**
+   * Toque/clique numa imagem: seleciona; arrastar move (mouse direto; no toque, depois de selecionada, para
+   * não brigar com a rolagem); as alças mudam a largura. Tudo fora do Angular até soltar.
+   */
+  private onImagePointerDown(event: PointerEvent): void {
+    if (this.disabled || event.button > 0) return;
+    const target = event.target as HTMLElement | null;
+    const el = target?.closest?.('.md-image') as HTMLElement | null;
+    if (!el) {
+      if (this.selectedImage) this.selectImage(null);
+      return;
+    }
+    if (el.classList.contains('is-uploading')) {
+      event.preventDefault();
+      return;
+    }
+    const action = (target!.closest('[data-image-action]') as HTMLElement | null)?.dataset['imageAction'];
+    if (action) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.zone.run(() => this.imageAction(el, action));
+      return;
+    }
+    const handle = target!.closest('.md-image__handle') as HTMLElement | null;
+    const wasSelected = el === this.selectedImage;
+    this.selectImage(el, event.pointerType === 'mouse');
+    if (handle) {
+      event.preventDefault();
+      this.startImageGesture(event, el, 'resize', handle.classList.contains('md-image__handle--w') ? -1 : 1);
+    } else if (event.pointerType === 'mouse' || wasSelected) {
+      event.preventDefault();
+      this.startImageGesture(event, el, 'pending', 1);
+    }
+  }
+
+  private startImageGesture(event: PointerEvent, el: HTMLElement, kind: 'pending' | 'resize', side: 1 | -1): void {
+    this.endImageGesture(false);
+    const rect = el.getBoundingClientRect();
+    const onMove = (e: PointerEvent) => {
+      if (e.pointerId !== gesture.pointerId) return;
+      e.preventDefault();
+      this.moveImageGesture(e.clientX, e.clientY);
+    };
+    const onUp = (e: PointerEvent) => {
+      if (e.pointerId !== gesture.pointerId) return;
+      this.endImageGesture(e.type === 'pointerup');
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') this.endImageGesture(false);
+    };
+    const gesture: ImageGesture = {
+      kind, el, side, pointerId: event.pointerId, startX: event.clientX, startY: event.clientY,
+      lastX: event.clientX, lastY: event.clientY, offX: event.clientX - rect.left, offY: event.clientY - rect.top,
+      startWidth: rect.width, maxWidth: this.contentWidth(), target: null, frame: 0,
+      scroller: scrollParent(this.editorArea.nativeElement),
+      off: () => {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+        window.removeEventListener('pointercancel', onUp);
+        window.removeEventListener('keydown', onKey, true);
+      },
+    };
+    this.imageGesture = gesture;
+    this.zone.runOutsideAngular(() => {
+      window.addEventListener('pointermove', onMove, { passive: false });
+      window.addEventListener('pointerup', onUp);
+      window.addEventListener('pointercancel', onUp);
+      window.addEventListener('keydown', onKey, true);
+    });
+    if (kind === 'resize') {
+      el.classList.add('is-resizing');
+      el.dataset['size'] = `${Math.round(rect.width)} px`;
+    }
+  }
+
+  private moveImageGesture(x: number, y: number): void {
+    const g = this.imageGesture;
+    if (!g) return;
+    g.lastX = x;
+    g.lastY = y;
+    if (g.kind === 'resize') {
+      const width = Math.round(Math.min(g.maxWidth, Math.max(IMAGE_MIN_WIDTH, g.startWidth + g.side * (x - g.startX))));
+      setImageWidth(g.el, width);
+      g.el.dataset['size'] = `${width} px`;
+      return;
+    }
+    if (g.kind === 'pending') {
+      if (Math.hypot(x - g.startX, y - g.startY) < 6) return;
+      g.kind = 'drag';
+      ensureImageOverlayStyles();
+      g.el.classList.add('is-dragging');
+      const img = g.el.querySelector('img');
+      const ghost = document.createElement('div');
+      ghost.className = 'ds-md-image-ghost';
+      const ghostWidth = Math.min(180, g.startWidth);
+      const scale = ghostWidth / g.startWidth;
+      g.offX *= scale;
+      g.offY *= scale;
+      ghost.style.width = `${ghostWidth}px`;
+      if (img?.src) ghost.style.backgroundImage = `url("${img.src}")`;
+      ghost.style.aspectRatio = img?.naturalWidth ? `${img.naturalWidth} / ${img.naturalHeight}` : '4 / 3';
+      const caret = document.createElement('div');
+      caret.className = 'ds-md-image-caret';
+      document.body.append(ghost, caret);
+      g.ghost = ghost;
+      g.caret = caret;
+      const tick = () => {
+        if (this.imageGesture !== g || g.kind !== 'drag') return;
+        this.autoScroll(g);
+        g.frame = requestAnimationFrame(tick);
+      };
+      g.frame = requestAnimationFrame(tick);
+    }
+    this.trackDrop(g);
+  }
+
+  private trackDrop(g: ImageGesture): void {
+    if (g.ghost) g.ghost.style.transform = `translate3d(${g.lastX - g.offX}px, ${g.lastY - g.offY}px, 0) rotate(-2deg)`;
+    g.target = this.rangeFromPoint(g.lastX, g.lastY, g.el);
+    const caret = g.caret;
+    if (!caret) return;
+    const rect = g.target ? caretRect(g.target) : null;
+    if (!rect) {
+      caret.style.opacity = '0';
+      return;
+    }
+    caret.style.opacity = '1';
+    caret.style.height = `${rect.height}px`;
+    caret.style.transform = `translate3d(${rect.left - 1}px, ${rect.top}px, 0)`;
+  }
+
+  /** Perto da borda de cima ou de baixo, a nota rola sozinha (a barra do dock cobre o rodapé). */
+  private autoScroll(g: ImageGesture): void {
+    const scroller = g.scroller;
+    const view = scroller && scroller !== document.scrollingElement
+      ? scroller.getBoundingClientRect()
+      : { top: 0, bottom: window.innerHeight };
+    const edge = 72;
+    let delta = 0;
+    if (g.lastY < view.top + edge) delta = -Math.ceil((view.top + edge - g.lastY) / 4);
+    else if (g.lastY > view.bottom - edge - 24) delta = Math.ceil((g.lastY - (view.bottom - edge - 24)) / 4);
+    if (!delta) return;
+    if (scroller && scroller !== document.scrollingElement) scroller.scrollTop += delta;
+    else window.scrollBy(0, delta);
+    this.trackDrop(g);
+  }
+
+  private endImageGesture(commit: boolean): void {
+    const g = this.imageGesture;
+    if (!g) return;
+    this.imageGesture = null;
+    g.off();
+    cancelAnimationFrame(g.frame);
+    g.ghost?.remove();
+    g.caret?.remove();
+    g.el.classList.remove('is-dragging', 'is-resizing');
+    delete g.el.dataset['size'];
+    if (!commit) return;
+    if (g.kind === 'resize') {
+      this.zone.run(() => this.onEditorInput());
+    } else if (g.kind === 'drag' && g.target) {
+      this.zone.run(() => this.moveImageTo(g.el, g.target!));
+    }
+  }
+
+  /** Solta a imagem no novo ponto do texto; o parágrafo de onde ela saiu some se ficou vazio. */
+  private moveImageTo(el: HTMLElement, range: Range): void {
+    const area = this.editorArea.nativeElement;
+    if (el.contains(range.startContainer)) return;
+    const from = el.parentElement;
+    if (range.startContainer === area) {
+      const p = document.createElement('p');
+      range.insertNode(p);
+      p.appendChild(el);
+    } else {
+      range.insertNode(el);
+    }
+    if (from && from !== area && from.isConnected && /^(P|DIV)$/.test(from.tagName) && this.isEmptyBlock(from)) {
+      from.remove();
+    }
+    el.classList.toggle('is-narrow', el.getBoundingClientRect().width < 220);
+    this.onEditorInput();
+  }
+
+  /** Ponto do texto sob o dedo/ponteiro, fora de imagens, código e fluxogramas (vai para antes ou depois). */
+  private rangeFromPoint(x: number, y: number, dragging?: HTMLElement): Range | null {
+    const area = this.editorArea?.nativeElement;
+    if (!area) return null;
+    const doc = document as Document & {
+      caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node; offset: number } | null;
+      caretRangeFromPoint?: (x: number, y: number) => Range | null;
+    };
+    let range: Range | null = null;
+    if (doc.caretPositionFromPoint) {
+      const position = doc.caretPositionFromPoint(x, y);
+      if (position) {
+        range = document.createRange();
+        range.setStart(position.offsetNode, position.offset);
+        range.collapse(true);
+      }
+    } else if (doc.caretRangeFromPoint) {
+      range = doc.caretRangeFromPoint(x, y);
+    }
+    if (!range || !area.contains(range.startContainer)) {
+      const hit = document.elementFromPoint(x, y);
+      if (!hit || !area.contains(hit) || hit === area) return null;
+      range = document.createRange();
+      range.selectNodeContents(hit);
+      range.collapse(false);
+    }
+    const atom = elementOf(range.startContainer)?.closest('.md-image, pre, .md-flowchart-card, .md-check-item input');
+    if (atom && area.contains(atom)) {
+      const rect = atom.getBoundingClientRect();
+      const before = atom.classList.contains('md-image') ? x < rect.left + rect.width / 2 : y < rect.top + rect.height / 2;
+      if (atom === dragging) return null;
+      range = document.createRange();
+      if (before) range.setStartBefore(atom);
+      else range.setStartAfter(atom);
+      range.collapse(true);
+    }
+    return range;
+  }
+
+  private openLightbox(el: HTMLElement): void {
+    const img = el.querySelector('img');
+    if (!img?.src || el.classList.contains('is-broken') || el.classList.contains('is-uploading')) return;
+    this.closeLightbox();
+    ensureImageOverlayStyles();
+    const box = document.createElement('div');
+    box.className = 'ds-md-image-lightbox';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-modal', 'true');
+    box.setAttribute('aria-label', img.alt || this.imageLabel);
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'ds-md-image-lightbox__close';
+    close.setAttribute('aria-label', this.imageTexts.close);
+    close.innerHTML = '<i class="fa-solid fa-xmark" aria-hidden="true"></i>';
+    const big = document.createElement('img');
+    big.src = img.src;
+    big.alt = img.alt;
+    box.append(big, close);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') this.closeLightbox();
+    };
+    box.addEventListener('click', () => this.closeLightbox());
+    document.addEventListener('keydown', onKey, true);
+    (box as HTMLElement & { _off?: () => void })._off = () => document.removeEventListener('keydown', onKey, true);
+    document.body.appendChild(box);
+    requestAnimationFrame(() => box.classList.add('is-open'));
+    this.lightbox = box;
+    close.focus({ preventScroll: true });
+  }
+
+  private closeLightbox(): void {
+    const box = this.lightbox as (HTMLElement & { _off?: () => void }) | null;
+    if (!box) return;
+    this.lightbox = null;
+    box._off?.();
+    box.classList.remove('is-open');
+    setTimeout(() => box.remove(), 220);
+  }
+
   // ─────────────── Ações de Fluxograma (Flowchart) ───────────────
 
   onEditorClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
     if (!target) return;
+
+    // Imagem: no modo leitura um toque abre em tela cheia; editando, o duplo clique.
+    const image = target.closest('.md-image') as HTMLElement | null;
+    if (image && !target.closest('.md-image__bar, .md-image__handle') && (this.disabled || event.detail === 2)) {
+      event.preventDefault();
+      this.openLightbox(image);
+      return;
+    }
 
     // Botão de editar fluxograma
     const editBtn = target.closest('.btn-edit-flowchart');
@@ -1152,6 +1811,18 @@ export class MdEditorComponent implements AfterViewInit, OnDestroy, ControlValue
   }
 
   onEditorKeydown(event: KeyboardEvent): void {
+    // Imagem selecionada: Delete/Backspace remove, Esc e as setas soltam.
+    if (this.selectedImage) {
+      if (event.key === 'Backspace' || event.key === 'Delete') {
+        event.preventDefault();
+        this.removeImage(this.selectedImage);
+        return;
+      }
+      if (event.key === 'Escape' || event.key.startsWith('Arrow') || event.key === 'Enter' || event.key.length === 1) {
+        this.selectImage(null);
+      }
+    }
+
     // Tecla Enter ou Tab dentro de bloco de código <pre>
     const sel = window.getSelection();
     if (sel && sel.rangeCount > 0) {
@@ -1454,6 +2125,15 @@ export class MdEditorComponent implements AfterViewInit, OnDestroy, ControlValue
       return `%%INLINE_CODE_${idx}%%`;
     });
 
+    // 2b. Imagens `![alt|largura](src)` (TK2026-01756): viram o bloco da imagem antes do escape e dos links.
+    const images: string[] = [];
+    html = html.replace(IMAGE_MD, (match, label: string, src: string) => {
+      if (!SAFE_IMAGE_SRC.test(src)) return match;
+      const { alt, width } = parseImageLabel(label);
+      images.push(imageMarkup(src, alt, width));
+      return `%%IMAGE_${images.length - 1}%%`;
+    });
+
     // 3. Escapar tags brutas restantes do texto fora dos blocos de código
     html = html
       .replace(/&/g, '&amp;')
@@ -1554,6 +2234,7 @@ export class MdEditorComponent implements AfterViewInit, OnDestroy, ControlValue
 
     // 14. Restaurar inline code
     html = html.replace(/%%INLINE_CODE_(\d+)%%/g, (_m, i) => inlineCodes[Number(i)] ?? '');
+    html = html.replace(/%%IMAGE_(\d+)%%/g, (_m, i) => images[Number(i)] ?? '');
 
     // 15. Restaurar fenced code blocks
     html = html.replace(/%%CODE_BLOCK_(\d+)%%/g, (_m, i) => codeBlocks[Number(i)] ?? '');
@@ -1668,7 +2349,7 @@ export class MdEditorComponent implements AfterViewInit, OnDestroy, ControlValue
     ) {
       if (
         el.querySelector(
-          'table, img, input, pre, blockquote, hr, .md-flowchart-card, .md-check-item'
+          'table, img, input, pre, blockquote, hr, .md-flowchart-card, .md-check-item, .md-image'
         )
       ) {
         return false;
@@ -1737,8 +2418,16 @@ export class MdEditorComponent implements AfterViewInit, OnDestroy, ControlValue
       case 'u': {
         return wrapInline(getChildrenMd(), '<u>', '</u>');
       }
+      case 'img': {
+        // <img> solto (não deveria sobrar depois do adoptRawImages): só endereços seguros seguem no texto.
+        const src = el.getAttribute('src') || '';
+        return /^https?:\/\//i.test(src) ? `![${cleanAlt(el.getAttribute('alt') || '')}](${src})` : '';
+      }
       case 'span':
       case 'font': {
+        if (el.classList.contains('md-image')) {
+          return imageToMarkdown(el);
+        }
         let content = getChildrenMd();
         const decoration = `${el.style?.textDecorationLine || ''} ${el.style?.textDecoration || ''}`;
         if (/underline/.test(decoration)) content = wrapInline(content, '<u>', '</u>');
@@ -1955,4 +2644,209 @@ function toHex(raw: string): string | null {
   const rgb = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/.exec(value);
   if (!rgb) return null;
   return '#' + rgb.slice(1, 4).map((n) => Math.min(255, Number(n)).toString(16).padStart(2, '0')).join('');
+}
+
+// ─────────────── Imagens (TK2026-01756) ───────────────
+
+interface ImageGesture {
+  kind: 'pending' | 'drag' | 'resize';
+  el: HTMLElement;
+  side: 1 | -1;
+  pointerId: number;
+  startX: number;
+  startY: number;
+  lastX: number;
+  lastY: number;
+  offX: number;
+  offY: number;
+  startWidth: number;
+  maxWidth: number;
+  target: Range | null;
+  frame: number;
+  scroller: HTMLElement | null;
+  ghost?: HTMLElement;
+  caret?: HTMLElement;
+  off: () => void;
+}
+
+function escapeAttr(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/** Texto alternativo seguro para `![...]`: sem colchetes, barra vertical nem quebra de linha. */
+function cleanAlt(value: string): string {
+  return value.replace(/[\[\]|\r\n]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120);
+}
+
+/** `alt|480` → { alt, width: 480 }. A largura em pixels é opcional (convenção do Obsidian). */
+function parseImageLabel(label: string): { alt: string; width: number | null } {
+  const match = /^(.*?)\|\s*(\d{2,4})\s*$/.exec(label);
+  if (!match) return { alt: label.trim(), width: null };
+  return { alt: match[1].trim(), width: Math.max(IMAGE_MIN_WIDTH, Number(match[2])) };
+}
+
+function imageMarkup(src: string, alt: string, width: number | null): string {
+  const size = width ? ` data-width="${width}" style="width:${width}px"` : '';
+  return `<span class="md-image" contenteditable="false" draggable="false" data-src="${escapeAttr(src)}" data-alt="${escapeAttr(alt)}"${size}>` +
+    `<img alt="${escapeAttr(alt)}" draggable="false" decoding="async">` +
+    '<span class="md-image__handle md-image__handle--w" aria-hidden="true"></span>' +
+    '<span class="md-image__handle md-image__handle--e" aria-hidden="true"></span>' +
+    '<span class="md-image__progress" aria-hidden="true"></span></span>';
+}
+
+function createImageElement(src: string, alt: string, width: number | null): HTMLElement {
+  const template = document.createElement('template');
+  template.innerHTML = imageMarkup(src, alt, width);
+  const el = template.content.firstElementChild as HTMLElement;
+  if (!src) delete el.dataset['src'];
+  return el;
+}
+
+function setImageWidth(el: HTMLElement, width: number | null): void {
+  if (width) {
+    el.style.width = `${width}px`;
+    el.dataset['width'] = String(width);
+  } else {
+    el.style.removeProperty('width');
+    delete el.dataset['width'];
+  }
+}
+
+/** Imagem ainda enviando (ou sem endereço) não vai para o Markdown. */
+function imageToMarkdown(el: HTMLElement): string {
+  const src = el.dataset['src'] || '';
+  if (!src || el.classList.contains('is-uploading') || !SAFE_IMAGE_SRC.test(src)) return '';
+  const alt = cleanAlt(el.dataset['alt'] || '');
+  const width = Number(el.dataset['width']) || 0;
+  return `![${alt}${width ? `|${Math.round(width)}` : ''}](${src})`;
+}
+
+function elementOf(node: Node | null): Element | null {
+  if (!node) return null;
+  return node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
+}
+
+function isImageBlob(blob: Blob): boolean {
+  const type = (blob.type || '').toLowerCase();
+  if (type.startsWith('image/')) return type !== 'image/svg+xml';
+  // iOS às vezes entrega HEIC sem tipo: confia na extensão.
+  return !type && /\.(?:jpe?g|png|gif|webp|heic|heif|avif|bmp)$/i.test((blob as File).name || '');
+}
+
+function imageFiles(data: DataTransfer | null | undefined): Blob[] {
+  if (!data) return [];
+  const files = Array.from(data.files || []).filter(isImageBlob);
+  if (files.length) return files;
+  return Array.from(data.items || [])
+    .filter((item) => item.kind === 'file' && item.type.startsWith('image/') && item.type !== 'image/svg+xml')
+    .map((item) => item.getAsFile())
+    .filter((file): file is File => !!file);
+}
+
+/** HTML da área de transferência que só traz imagens (cópia de uma imagem de site). */
+function onlyImagesInHtml(html: string): boolean {
+  if (!html.trim() || typeof DOMParser === 'undefined') return false;
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  return !!doc.body.querySelector('img') && !(doc.body.textContent || '').trim();
+}
+
+/**
+ * Converte qualquer imagem que o navegador decodifica (PNG, WebP, GIF, HEIC no Safari...) em JPEG, com o
+ * lado maior até `max` px e fundo branco no lugar da transparência. A orientação EXIF é aplicada.
+ */
+async function toJpeg(file: Blob, max: number, quality: number): Promise<{ blob: Blob; width: number; height: number }> {
+  let source: CanvasImageSource;
+  let width = 0;
+  let height = 0;
+  let release = () => {};
+  try {
+    const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' } as ImageBitmapOptions);
+    source = bitmap;
+    width = bitmap.width;
+    height = bitmap.height;
+    release = () => bitmap.close();
+  } catch {
+    const url = URL.createObjectURL(file);
+    try {
+      const img = new Image();
+      img.decoding = 'async';
+      img.src = url;
+      await img.decode();
+      source = img;
+      width = img.naturalWidth;
+      height = img.naturalHeight;
+    } finally {
+      release = () => URL.revokeObjectURL(url);
+    }
+  }
+  try {
+    if (!width || !height) throw new Error('Imagem vazia');
+    const scale = Math.min(1, max / Math.max(width, height));
+    const w = Math.max(1, Math.round(width * scale));
+    const h = Math.max(1, Math.round(height * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas indisponível');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, w, h);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(source, 0, 0, w, h);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
+    canvas.width = 0;
+    canvas.height = 0;
+    if (!blob || blob.type !== 'image/jpeg') throw new Error('JPEG indisponível');
+    return { blob, width: w, height: h };
+  } finally {
+    release();
+  }
+}
+
+function scrollParent(el: HTMLElement): HTMLElement | null {
+  let node: HTMLElement | null = el;
+  while (node && node !== document.body) {
+    const style = getComputedStyle(node);
+    if (/(auto|scroll|overlay)/.test(style.overflowY) && node.scrollHeight > node.clientHeight + 1) return node;
+    node = node.parentElement;
+  }
+  return (document.scrollingElement as HTMLElement | null) ?? document.documentElement;
+}
+
+/** Retângulo da posição de inserção (linha vazia não tem retângulo: usa o do bloco). */
+function caretRect(range: Range): { left: number; top: number; height: number } | null {
+  const rects = range.getClientRects();
+  const rect = rects.length ? rects[0] : range.getBoundingClientRect();
+  if (rect && rect.height > 0) return { left: rect.left, top: rect.top, height: rect.height };
+  const el = elementOf(range.startContainer);
+  if (!el) return null;
+  const block = el.getBoundingClientRect();
+  const line = parseFloat(getComputedStyle(el).lineHeight) || 22;
+  return { left: block.left, top: block.top, height: Math.min(block.height || line, line) };
+}
+
+/** Fantasma do arrasto, cursor de destino e tela cheia ficam no <body>: estilo global, injetado uma vez. */
+function ensureImageOverlayStyles(): void {
+  if (document.getElementById('ds-md-image-overlay-styles')) return;
+  const style = document.createElement('style');
+  style.id = 'ds-md-image-overlay-styles';
+  style.textContent = `
+.ds-md-image-ghost{position:fixed;left:0;top:0;z-index:2147483000;pointer-events:none;border-radius:12px;
+  background:center/cover no-repeat #fff;opacity:.92;box-shadow:0 22px 48px rgba(15,23,42,.28),0 4px 12px rgba(15,23,42,.18);
+  outline:2px solid var(--color-primary-500,#3b82f6);outline-offset:2px;will-change:transform}
+.ds-md-image-caret{position:fixed;left:0;top:0;z-index:2147483001;width:3px;border-radius:3px;pointer-events:none;
+  background:var(--color-primary-500,#3b82f6);box-shadow:0 0 0 4px color-mix(in srgb,var(--color-primary-500,#3b82f6) 22%,transparent);
+  transition:transform 70ms ease-out,height 70ms ease-out,opacity .12s;will-change:transform}
+.ds-md-image-lightbox{position:fixed;inset:0;z-index:2147483002;display:grid;place-items:center;padding:max(24px,env(safe-area-inset-top)) 24px max(24px,env(safe-area-inset-bottom));
+  background:rgba(8,10,18,.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);opacity:0;transition:opacity .2s ease;cursor:zoom-out}
+.ds-md-image-lightbox.is-open{opacity:1}
+.ds-md-image-lightbox img{max-width:min(100%,1600px);max-height:100%;object-fit:contain;border-radius:14px;
+  box-shadow:0 30px 80px rgba(0,0,0,.45);transform:scale(.96);transition:transform .28s cubic-bezier(.32,.72,0,1)}
+.ds-md-image-lightbox.is-open img{transform:scale(1)}
+.ds-md-image-lightbox__close{position:absolute;top:max(16px,env(safe-area-inset-top));right:16px;width:42px;height:42px;border-radius:50%;
+  border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.12);color:#fff;font-size:18px;cursor:pointer;display:grid;place-items:center}
+.ds-md-image-lightbox__close:hover{background:rgba(255,255,255,.22)}
+@media (prefers-reduced-motion:reduce){.ds-md-image-caret,.ds-md-image-lightbox,.ds-md-image-lightbox img{transition:none}}`;
+  document.head.appendChild(style);
 }

@@ -904,3 +904,323 @@
   max-width: 100%;
   height: auto;
 }
+
+/* ── Imagens da nota (TK2026-01756) ──────────────────────────────────────────
+   Tokens: --ds-md-image-radius / -accent / -placeholder / -bar-bg / -bar-fg   */
+.ds-md-image-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+:host ::ng-deep .editor-area .md-image {
+  --_accent: var(--ds-md-image-accent, var(--color-primary-500, #3b82f6));
+  --_radius: var(--ds-md-image-radius, 12px);
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  margin: 6px 2px;
+  vertical-align: bottom;
+  border-radius: var(--_radius);
+  line-height: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  cursor: grab;
+  transition: box-shadow 0.18s ease, opacity 0.18s ease, transform 0.18s ease;
+}
+
+:host ::ng-deep .editor-area .md-image img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  min-height: 48px;
+  min-width: 48px;
+  border-radius: var(--_radius);
+  background: var(--ds-md-image-placeholder, color-mix(in srgb, currentColor 7%, transparent));
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 8px 24px rgba(15, 23, 42, 0.08);
+  object-fit: contain;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+:host ::ng-deep .editor-area .md-image:not([style*='width']) img {
+  width: auto;
+}
+
+:host ::ng-deep .editor-area .md-image:hover img {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08), 0 12px 30px rgba(15, 23, 42, 0.12);
+}
+
+:host ::ng-deep .editor-area .md-image.is-selected {
+  box-shadow: 0 0 0 2px var(--_accent), 0 0 0 6px color-mix(in srgb, var(--_accent) 18%, transparent);
+  touch-action: none;
+}
+
+:host ::ng-deep .editor-area .md-image.is-dragging {
+  opacity: 0.32;
+  transform: scale(0.98);
+}
+
+:host ::ng-deep .editor-area .md-image.is-resizing {
+  cursor: ew-resize;
+}
+
+/* Carregando / sem acesso */
+:host ::ng-deep .editor-area .md-image.is-loading img {
+  min-width: min(320px, 100%);
+  aspect-ratio: 4 / 3;
+  background:
+    linear-gradient(100deg, transparent 30%, color-mix(in srgb, currentColor 10%, transparent) 50%, transparent 70%) 0 0 / 220% 100%,
+    color-mix(in srgb, currentColor 6%, transparent);
+  animation: ds-md-image-shimmer 1.3s ease-in-out infinite;
+}
+
+:host ::ng-deep .editor-area .md-image.is-broken img {
+  min-width: min(240px, 100%);
+  aspect-ratio: 16 / 9;
+  opacity: 0;
+}
+
+:host ::ng-deep .editor-area .md-image.is-broken::after {
+  content: '\f03e';
+  font-family: 'Font Awesome 6 Free', 'Font Awesome 6 Pro', sans-serif;
+  font-weight: 400;
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 26px;
+  line-height: 1;
+  color: color-mix(in srgb, currentColor 40%, transparent);
+  border: 1px dashed color-mix(in srgb, currentColor 22%, transparent);
+  border-radius: var(--_radius);
+  background: color-mix(in srgb, currentColor 5%, transparent);
+}
+
+/* Enviando: a imagem aparece na hora, esmaecida, com a barra de progresso. */
+:host ::ng-deep .editor-area .md-image.is-uploading {
+  cursor: progress;
+}
+
+:host ::ng-deep .editor-area .md-image.is-uploading img {
+  min-width: min(240px, 100%);
+  filter: saturate(0.6) brightness(1.04);
+  opacity: 0.66;
+}
+
+:host ::ng-deep .editor-area .md-image__progress {
+  display: none;
+}
+
+:host ::ng-deep .editor-area .md-image.is-uploading .md-image__progress {
+  display: block;
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  height: 4px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 1px 6px rgba(15, 23, 42, 0.18);
+}
+
+:host ::ng-deep .editor-area .md-image.is-uploading .md-image__progress::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  transform: scaleX(max(0.06, var(--md-image-progress, 0)));
+  background: var(--_accent);
+  border-radius: inherit;
+  transition: transform 0.25s ease;
+}
+
+/* Alças laterais: só na imagem selecionada. Área de toque maior que o desenho. */
+:host ::ng-deep .editor-area .md-image__handle {
+  position: absolute;
+  top: 50%;
+  width: 10px;
+  height: 36px;
+  margin-top: -18px;
+  border-radius: 6px;
+  background: #ffffff;
+  border: 2px solid var(--_accent);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.22);
+  cursor: ew-resize;
+  opacity: 0;
+  transform: scale(0.6);
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  touch-action: none;
+}
+
+:host ::ng-deep .editor-area .md-image__handle::before {
+  content: '';
+  position: absolute;
+  inset: -12px -14px;
+}
+
+:host ::ng-deep .editor-area .md-image__handle--w { left: -6px; }
+:host ::ng-deep .editor-area .md-image__handle--e { right: -6px; }
+
+:host ::ng-deep .editor-area .md-image.is-selected .md-image__handle {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+/* Medida durante o redimensionamento */
+:host ::ng-deep .editor-area .md-image.is-resizing::before {
+  content: attr(data-size);
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+  z-index: 2;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font: 600 11px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  letter-spacing: 0.02em;
+  color: #fff;
+  background: rgba(15, 23, 42, 0.78);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Mini barra da imagem selecionada: três larguras e remover. */
+:host ::ng-deep .editor-area .md-image__bar {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 999px;
+  line-height: 1;
+  background: var(--ds-md-image-bar-bg, rgba(15, 23, 42, 0.74));
+  color: var(--ds-md-image-bar-fg, #ffffff);
+  backdrop-filter: blur(12px) saturate(1.4);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.28);
+  animation: ds-md-image-bar-in 0.22s cubic-bezier(0.32, 0.72, 0, 1);
+  cursor: default;
+}
+
+:host ::ng-deep .editor-area .md-image.is-narrow .md-image__bar {
+  top: auto;
+  right: auto;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  transform: translateX(-50%);
+}
+
+:host ::ng-deep .editor-area .md-image.is-dragging .md-image__bar,
+:host ::ng-deep .editor-area .md-image.is-resizing .md-image__bar {
+  opacity: 0;
+}
+
+:host ::ng-deep .editor-area .md-image__bar button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+:host ::ng-deep .editor-area .md-image__bar button:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+:host ::ng-deep .editor-area .md-image__glyph {
+  position: relative;
+  display: block;
+  width: 16px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1.5px solid currentColor;
+  opacity: 0.9;
+}
+
+:host ::ng-deep .editor-area .md-image__glyph::after {
+  content: '';
+  position: absolute;
+  left: 1.5px;
+  top: 1.5px;
+  bottom: 1.5px;
+  width: calc((100% - 3px) * var(--fill, 100) / 100);
+  border-radius: 1.5px;
+  background: currentColor;
+}
+
+:host ::ng-deep .editor-area .md-image__sep {
+  width: 1px;
+  height: 18px;
+  margin: 0 3px;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+:host ::ng-deep .editor-area .md-image__remove:hover {
+  background: rgba(244, 63, 94, 0.32) !important;
+}
+
+/* Modo leitura: toque abre em tela cheia. */
+:host ::ng-deep .editor-container--disabled .editor-area .md-image {
+  cursor: zoom-in;
+  box-shadow: none;
+}
+
+:host ::ng-deep .editor-container--disabled .editor-area .md-image__handle,
+:host ::ng-deep .editor-container--disabled .editor-area .md-image__bar {
+  display: none;
+}
+
+@keyframes ds-md-image-shimmer {
+  from { background-position: 120% 0, 0 0; }
+  to { background-position: -120% 0, 0 0; }
+}
+
+@keyframes ds-md-image-bar-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+
+:host ::ng-deep .editor-area .md-image.is-narrow .md-image__bar {
+  animation: none;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  :host ::ng-deep .editor-area .md-image { cursor: default; }
+  :host ::ng-deep .editor-area .md-image__bar button { width: 38px; height: 36px; }
+  :host ::ng-deep .editor-area .md-image__handle { width: 12px; height: 44px; margin-top: -22px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host ::ng-deep .editor-area .md-image,
+  :host ::ng-deep .editor-area .md-image__bar,
+  :host ::ng-deep .editor-area .md-image__handle,
+  :host ::ng-deep .editor-area .md-image.is-loading img {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* A barra é um controle sobre a imagem, não texto da nota: apps que pintam todo o conteúdo do
+   editor (ex.: `.editor-area * { color: ... }`) não podem apagar os ícones. */
+:host ::ng-deep .editor-area .md-image .md-image__bar,
+:host ::ng-deep .editor-area .md-image .md-image__bar * {
+  color: var(--ds-md-image-bar-fg, #ffffff) !important;
+}
