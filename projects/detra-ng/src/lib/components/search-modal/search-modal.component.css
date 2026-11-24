@@ -781,9 +781,13 @@
     align-self: center;
   }
 
-  .ds-search-modal__result-item--selected .ds-search-modal__result-name,
-  .ds-search-modal__result-item--selected .ds-search-modal__result-details {
+  .ds-search-modal__result-item--selected .ds-search-modal__result-name {
     grid-column: 2;
+  }
+
+  /* Tags ocupam 100% da largura, abaixo do check + nome */
+  .ds-search-modal__result-item--selected .ds-search-modal__result-details {
+    grid-column: 1 / -1;
   }
 
   .ds-search-modal__result-name {
