@@ -742,3 +742,64 @@
   font-size: 2rem;
   opacity: 0.3;
 }
+
+/* ══════════════════════════════════════════
+   Mobile — lista de resultados (TK2026-01629)
+   No desktop o item selecionado fica em linha (check · nome · tags).
+   No mobile isso espreme o nome e sobrepõe as tags; aqui o item vira
+   grid: check numa coluna fixa, nome e tags empilhados ao lado.
+   ══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .ds-search-modal__header {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .ds-search-modal__results-header {
+    padding: var(--space-2) var(--space-4);
+  }
+
+  /* Reserva espaço para o botão "Fechar" não cobrir o último item */
+  .ds-search-modal__body {
+    padding-bottom: 48px;
+  }
+
+  .ds-search-modal__result-item {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .ds-search-modal__result-item--selected {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 10px;
+    row-gap: 4px;
+    align-items: start;
+  }
+
+  .ds-search-modal__result-item--selected .ds-search-modal__result-check {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: center;
+  }
+
+  .ds-search-modal__result-item--selected .ds-search-modal__result-name,
+  .ds-search-modal__result-item--selected .ds-search-modal__result-details {
+    grid-column: 2;
+  }
+
+  .ds-search-modal__result-name {
+    overflow-wrap: anywhere;
+  }
+
+  .ds-search-modal__result-details {
+    min-width: 0;
+  }
+
+  /* Tags longas (ex.: e-mail) truncam em vez de estourar a largura */
+  .ds-search-modal__result-tag {
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
