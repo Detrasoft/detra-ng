@@ -236,7 +236,7 @@ interface ChipRow {
                 <div class="ds-search-modal__result-name" [innerHTML]="row.principalHtml"></div>
 
                 <div class="ds-search-modal__result-details" *ngIf="row.details.length > 0">
-                  <span class="ds-search-modal__result-tag" *ngFor="let d of row.details; trackBy: trackByDetail">
+                  <span class="ds-search-modal__result-tag" *ngFor="let d of row.details; trackBy: trackByDetail" [class.ds-search-modal__result-tag--empty]="!d.value" [attr.title]="d.label">
                     <span class="ds-search-modal__result-tag__label">{{ d.label }}:</span>
                     {{ d.value }}
                   </span>

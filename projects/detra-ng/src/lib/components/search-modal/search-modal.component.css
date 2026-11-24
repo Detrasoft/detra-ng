@@ -802,4 +802,14 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+
+  /* Mobile: só o valor do campo — dados mais objetivos (labels ocultos) */
+  .ds-search-modal__result-tag__label {
+    display: none;
+  }
+
+  /* Sem label, tag vazia (ex.: "Inativo:" sem valor) não tem o que mostrar */
+  .ds-search-modal__result-tag--empty {
+    display: none;
+  }
 }
