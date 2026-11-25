@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { DS_SKELETON_HOST, DsSkeletonDirective } from '../skeleton/skeleton.directive';
 
 export type FlowchartNodeType = 'process' | 'terminal' | 'decision' | 'database' | 'subgraph';
 
@@ -54,6 +55,7 @@ export interface FlowchartResult {
 
 @Component({
   selector: 'ds-flowchart-editor',
+  hostDirectives: [DS_SKELETON_HOST],
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './flowchart-editor.component.html',

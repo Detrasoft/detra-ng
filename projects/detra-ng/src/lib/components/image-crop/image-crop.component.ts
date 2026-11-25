@@ -16,9 +16,11 @@ import {
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CropResult, ImageCropOutputFormat, ImageCropShape } from './image-crop.types';
+import { DS_SKELETON_HOST, DsSkeletonDirective } from '../skeleton/skeleton.directive';
 
 @Component({
   selector: 'ds-image-crop',
+  hostDirectives: [DS_SKELETON_HOST],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, FormsModule],

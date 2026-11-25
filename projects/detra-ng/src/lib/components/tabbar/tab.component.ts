@@ -10,6 +10,7 @@ import {
   forwardRef,
 } from '@angular/core';
 import { TabbarComponent } from './tabbar.component';
+import { DS_SKELETON_HOST, DsSkeletonDirective } from '../skeleton/skeleton.directive';
 
 /**
  * Represents a single tab panel inside a `<ds-tabbar>`.
@@ -23,6 +24,7 @@ import { TabbarComponent } from './tabbar.component';
  */
 @Component({
   selector: 'ds-tab',
+  hostDirectives: [DS_SKELETON_HOST],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -32,6 +34,9 @@ import { TabbarComponent } from './tabbar.component';
   `,
 })
 export class TabComponent implements OnChanges {
+  /** Estado do skeleton (`[skeleton]`), via host directive. */
+  readonly sk = inject(DsSkeletonDirective);
+
   private readonly tabbar = inject(forwardRef(() => TabbarComponent), { optional: true });
 
   /** Unique identifier for this tab. */

@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component, Input, forwardRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@angular/forms';
+import { DS_SKELETON_HOST, DsSkeletonDirective } from '../skeleton/skeleton.directive';
 
 @Component({
   selector: 'ds-checkbox',
+  hostDirectives: [DS_SKELETON_HOST],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, ReactiveFormsModule],
@@ -18,14 +20,14 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@a
         (change)="onToggle($event)"
         (blur)="onTouched()"
       />
-      <span class="ds-checkbox__box">
+      <span class="ds-checkbox__box" data-sk>
         <span class="ds-checkbox__check">
           <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
             <path d="M3 8.5L6.5 12L13 4" />
           </svg>
         </span>
       </span>
-      <span *ngIf="label" class="ds-checkbox__label">{{ label }}</span>
+      <span *ngIf="label" class="ds-checkbox__label" data-sk="text">{{ label }}</span>
     </label>
   `,
   styleUrl: './checkbox.component.css',

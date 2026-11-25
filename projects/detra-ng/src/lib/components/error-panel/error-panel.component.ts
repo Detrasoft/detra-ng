@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewEncapsulation, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { DS_SKELETON_HOST, DsSkeletonDirective } from '../skeleton/skeleton.directive';
 
 export interface ApiFieldError {
   fieldName: string;
@@ -17,6 +18,7 @@ export interface ApiValidationError {
 
 @Component({
   selector: 'ds-error-panel',
+  hostDirectives: [DS_SKELETON_HOST],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule],

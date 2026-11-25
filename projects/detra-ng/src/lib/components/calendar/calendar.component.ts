@@ -17,6 +17,7 @@ import {
   ViewEncapsulation,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { DS_SKELETON_HOST, DS_SKELETON_ROWS, DsSkeletonDirective } from '../skeleton/skeleton.directive';
 
 /* ═══════════════════════════════════════════
    Public Types & Interfaces
@@ -171,6 +172,7 @@ interface ActiveResizeState {
 
 @Component({
   selector: 'ds-calendar',
+  hostDirectives: [DS_SKELETON_HOST],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None,
@@ -232,13 +234,13 @@ interface ActiveResizeState {
               </span>
 
               <!-- Skeleton for month cells -->
-              <div *ngIf="loading" class="ds-calendar__skeleton-events">
-                <div class="ds-calendar__skeleton-pill" [style.width.%]="70"></div>
-                <div class="ds-calendar__skeleton-pill" [style.width.%]="85" *ngIf="cell.day % 2 === 0"></div>
+              <div *ngIf="isLoading" class="ds-sk ds-calendar__skeleton-events">
+                <div data-sk class="ds-calendar__skeleton-pill" [style.width.%]="70"></div>
+                <div data-sk class="ds-calendar__skeleton-pill" [style.width.%]="85" *ngIf="cell.day % 2 === 0"></div>
               </div>
 
               <!-- Real events -->
-              <div class="ds-calendar__month-events" *ngIf="!loading">
+              <div class="ds-calendar__month-events" *ngIf="!isLoading">
                 <div *ngFor="let e of cell.events | slice:0:eventMaxStack; trackBy: trackByEventId"
                      class="ds-calendar__event ds-calendar__event--dot"
                      [class.ds-calendar__event--draggable]="isDraggable(e)"
@@ -277,13 +279,13 @@ interface ActiveResizeState {
           </div>
 
           <!-- All-day row -->
-          <div class="ds-calendar__timegrid-allday" *ngIf="hasAnyAllDayEvents || loading">
+          <div class="ds-calendar__timegrid-allday" *ngIf="hasAnyAllDayEvents || isLoading">
             <div class="ds-calendar__timegrid-gutter-allday">
               <span>{{ locale.allDayLabel }}</span>
             </div>
             <div class="ds-calendar__timegrid-allday-col" *ngFor="let day of gridDays; trackBy: trackByGridDay"
                  [class.ds-calendar__timegrid-allday-col--today]="day.isToday">
-              <ng-container *ngIf="!loading">
+              <ng-container *ngIf="!isLoading">
                 <div *ngFor="let e of getAllDayEventsForDate(day.date); trackBy: trackByEventId"
                      class="ds-calendar__event ds-calendar__event--allday"
                      [class.ds-calendar__event--draggable]="isDraggable(e)"
@@ -296,7 +298,7 @@ interface ActiveResizeState {
                   {{ e.title }}
                 </div>
               </ng-container>
-              <div *ngIf="loading && day.isToday" class="ds-calendar__skeleton-pill" style="width: 80%; margin: 2px;"></div>
+              <div *ngIf="isLoading && day.isToday" class="ds-sk ds-calendar__skeleton-pill" data-sk style="width: 80%; margin: 2px;"></div>
             </div>
           </div>
 
@@ -326,17 +328,17 @@ interface ActiveResizeState {
                   </div>
 
                   <!-- Skeleton timegrid blocks -->
-                  <div *ngIf="loading" class="ds-calendar__skeleton-timegrid">
-                    <div class="ds-calendar__skeleton-block"
+                  <div *ngIf="isLoading" class="ds-sk ds-calendar__skeleton-timegrid">
+                    <div data-sk class="ds-calendar__skeleton-block"
                          *ngIf="day.dayNumber % 2 === 0"
                          style="top: 20%; height: 16%; left: 6%; width: 88%;"></div>
-                    <div class="ds-calendar__skeleton-block"
+                    <div data-sk class="ds-calendar__skeleton-block"
                          *ngIf="day.dayNumber % 3 === 0"
                          style="top: 48%; height: 22%; left: 6%; width: 88%;"></div>
                   </div>
 
                   <!-- Positioned timed events -->
-                  <ng-container *ngIf="!loading">
+                  <ng-container *ngIf="!isLoading">
                     <div *ngFor="let pe of getPositionedEventsForDate(day.date); trackBy: trackByPosEvent"
                          class="ds-calendar__event ds-calendar__event--timed"
                          [class.ds-calendar__event--draggable]="isDraggable(pe.event)"
@@ -385,15 +387,15 @@ interface ActiveResizeState {
       <!-- ═══════════════ LIST VIEW ═══════════════ -->
       <div class="ds-calendar__list" *ngIf="currentView === 'list'">
         <!-- Skeleton list -->
-        <div *ngIf="loading" class="ds-calendar__skeleton-list">
-          <div class="ds-calendar__skeleton-list-item" *ngFor="let _ of [1,2,3,4,5]">
-            <div class="ds-calendar__skeleton-pill" style="width: 4px; height: 32px; border-radius: 2px;"></div>
-            <div class="ds-calendar__skeleton-pill" style="width: 100px; height: 16px;"></div>
-            <div class="ds-calendar__skeleton-pill" style="flex: 1; height: 16px;"></div>
+        <div *ngIf="isLoading" class="ds-sk ds-calendar__skeleton-list">
+          <div class="ds-calendar__skeleton-list-item" *ngFor="let _ of skRows">
+            <div data-sk class="ds-calendar__skeleton-pill" style="width: 4px; height: 32px; border-radius: 2px;"></div>
+            <div data-sk class="ds-calendar__skeleton-pill" style="width: 100px; height: 16px;"></div>
+            <div data-sk class="ds-calendar__skeleton-pill" style="flex: 1; height: 16px;"></div>
           </div>
         </div>
 
-        <ng-container *ngIf="!loading">
+        <ng-container *ngIf="!isLoading">
           <div *ngIf="listGroups.length === 0" class="ds-calendar__list-empty">
             {{ locale.noEventsLabel }}
           </div>
@@ -510,6 +512,10 @@ interface ActiveResizeState {
   `,
 })
 export class CalendarComponent implements OnInit, OnChanges, OnDestroy {
+  /** Estado do skeleton (`[skeleton]`), via host directive. */
+  readonly sk = inject(DsSkeletonDirective);
+  readonly skRows = DS_SKELETON_ROWS;
+
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly ngZone = inject(NgZone);
 
@@ -532,8 +538,13 @@ export class CalendarComponent implements OnInit, OnChanges, OnDestroy {
   @Input() eventStartEditable = true;
   @Input() eventDurationEditable = true;
 
-  /** Loading / Skeleton */
+  /** Loading / Skeleton (equivalente a `[skeleton]`, mantido por compatibilidade) */
   @Input() loading = false;
+
+  /** Skeleton ativo por `[loading]` ou pelo `[skeleton]` padrão da detra-ng. */
+  get isLoading(): boolean {
+    return this.loading || this.sk.active();
+  }
 
   /** Default Event Color Fallback */
   @Input() defaultEventColor = 'var(--color-primary-600, #896ff4)';
@@ -641,11 +652,11 @@ export class CalendarComponent implements OnInit, OnChanges, OnDestroy {
      ═══════════════════════════════════════════ */
 
   isDraggable(e: CalendarEvent): boolean {
-    return this.editable && this.eventStartEditable && !this.loading;
+    return this.editable && this.eventStartEditable && !this.isLoading;
   }
 
   isResizable(e: CalendarEvent): boolean {
-    return this.editable && this.eventDurationEditable && !this.isAllDayEvent(e) && !this.loading;
+    return this.editable && this.eventDurationEditable && !this.isAllDayEvent(e) && !this.isLoading;
   }
 
   /* ═══════════════════════════════════════════

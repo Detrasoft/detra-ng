@@ -6,8 +6,10 @@ import {
   Output,
   TemplateRef,
   ViewChild,
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { DS_SKELETON_HOST, DsSkeletonDirective } from '../skeleton/skeleton.directive';
 
 /* ═══════════════════════════════════════════
    TreeNode — Public interface
@@ -30,12 +32,28 @@ export interface TreeNode {
   expanded?: boolean;
 }
 
+/** Árvore fictícia renderizada pelo próprio template durante o `[skeleton]`. */
+const SKELETON_TREE: TreeNode[] = [
+  {
+    key: '__sk1',
+    label: 'Carregando categoria',
+    expanded: true,
+    children: [
+      { key: '__sk2', label: 'Carregando item' },
+      { key: '__sk3', label: 'Carregando item longo' },
+    ],
+  },
+  { key: '__sk4', label: 'Carregando', children: [{ key: '__sk5', label: 'Item' }] },
+  { key: '__sk6', label: 'Carregando categoria longa' },
+];
+
 /* ═══════════════════════════════════════════
    Tree Component
    ═══════════════════════════════════════════ */
 
 @Component({
   selector: 'ds-tree',
+  hostDirectives: [DS_SKELETON_HOST],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule],
@@ -43,6 +61,10 @@ export interface TreeNode {
   styleUrl: './tree.component.css',
 })
 export class TreeComponent {
+  /** Estado do skeleton (`[skeleton]`), via host directive. */
+  readonly sk = inject(DsSkeletonDirective);
+  readonly skNodes = SKELETON_TREE;
+
   /* ── Inputs ── */
 
   /** The hierarchical data to display */

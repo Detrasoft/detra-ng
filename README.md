@@ -6,7 +6,7 @@ pickers, listas, árvores, dialogs, toasts, search genérica e editor HTML
 sem dependências de UI de terceiros (Material, PrimeNG, etc.).
 
 > **Escopo:** `@detrasoft.com/detra-ng`
-> **Versão atual:** `0.6.32` — Angular 17 / 18 / 19 / 20 (peer-deps).
+> **Versão atual:** `0.6.33` — Angular 17 / 18 / 19 / 20 (peer-deps).
 
 ---
 
@@ -88,6 +88,32 @@ export const appConfig: ApplicationConfig = {
   ],
 };
 ```
+
+### Skeleton (todos os componentes)
+
+Todo componente `ds-*` aceita `[skeleton]`. O layout é mantido e o conteúdo vira "ossos" no formato real do componente:
+
+```html
+<ds-input label="Nome" [skeleton]="carregando()"></ds-input>
+<ds-list [data]="clientes" [skeleton]="carregando()">...</ds-list>
+<ds-tab id="plano" header="Plano" [skeleton]="carregandoPlano()">...</ds-tab>
+```
+
+Para elementos do próprio app, use a diretiva e marque os ossos:
+
+```html
+<div [dsSkeleton]="carregando()">
+  <img data-sk="circle" [src]="foto" />
+  <h3 data-sk="text">{{ nome }}</h3>
+  <p data-sk="text">{{ cargo }}</p>
+</div>
+
+<!-- placeholder sem conteúdo ainda -->
+<ds-skeleton variant="title"></ds-skeleton>
+<ds-skeleton [lines]="3"></ds-skeleton>
+```
+
+Leve para aparelhos antigos: um único `<style>` por página, anima só `opacity`, desliga blur e sombras dos ossos e fica estático com `prefers-reduced-motion`, com a classe `.ds-sk-static` ou em aparelhos com até 2 núcleos / 2 GB. A cor vem de `--ds-sk-bg` (padrão `--skeleton-mid` do tema).
 
 ### Toast global
 

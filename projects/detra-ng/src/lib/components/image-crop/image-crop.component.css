@@ -505,3 +505,8 @@
     flex: 1;
   }
 }
+
+/* Superfície sempre clara: ossos do skeleton em lilás suave sobre o branco. */
+.ds-crop-dialog {
+  --ds-sk-bg: rgba(75, 61, 134, 0.1);
+}

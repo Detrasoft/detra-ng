@@ -12,6 +12,7 @@
   <div class="ds-org-node-self">
     <div
       class="ds-org-chart-node-content"
+      data-sk
       [ngClass]="cardClasses"
       [class.ds-org-chart-node-selectable]="isSelectable"
       [class.ds-org-chart-node-selected]="isSelected"
@@ -138,6 +139,7 @@
       *ngIf="hasChildren && collapsible"
       type="button"
       class="ds-org-chart-toggle"
+      data-sk-hide
       [class.ds-org-chart-toggle-collapsed]="!isExpanded"
       [attr.aria-expanded]="isExpanded"
       [attr.aria-label]="toggleLabel"

@@ -6,6 +6,7 @@ import {
   Input,
   Output,
   TemplateRef,
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { OrganizationChartNodeComponent } from './organization-chart-node.component';
@@ -14,9 +15,25 @@ import {
   OrgChartOrientation,
   OrgChartSelectionMode,
 } from './organization-chart.types';
+import { DS_SKELETON_HOST, DsSkeletonDirective } from '../skeleton/skeleton.directive';
+
+/** Organograma fictício renderizado pelos nós reais durante o `[skeleton]`. */
+const SKELETON_ORG: OrgChartNode[] = [
+  {
+    id: '__sk0',
+    title: 'Carregando',
+    subtitle: 'Carregando cargo',
+    children: [
+      { id: '__sk1', title: 'Carregando', subtitle: 'Carregando' },
+      { id: '__sk2', title: 'Carregando', subtitle: 'Carregando cargo' },
+      { id: '__sk3', title: 'Carregando', subtitle: 'Carregando' },
+    ],
+  },
+];
 
 @Component({
   selector: 'ds-organization-chart',
+  hostDirectives: [DS_SKELETON_HOST],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, OrganizationChartNodeComponent],
@@ -24,6 +41,14 @@ import {
   styleUrl: './organization-chart.component.css',
 })
 export class OrganizationChartComponent {
+  /** Estado do skeleton (`[skeleton]`), via host directive. */
+  readonly sk = inject(DsSkeletonDirective);
+
+  /** Nós exibidos: os reais ou, no skeleton, o organograma fictício. */
+  get nodes(): OrgChartNode[] {
+    return this.sk.active() ? SKELETON_ORG : this.value;
+  }
+
   /** Hierarchical nodes data */
   @Input() value: OrgChartNode[] = [];
 

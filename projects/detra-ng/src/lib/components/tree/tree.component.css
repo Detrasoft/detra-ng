@@ -238,3 +238,9 @@
   );
   pointer-events: none;
 }
+
+/* Skeleton: o rótulo abraça o texto (larguras variadas) e o badge segue à direita. */
+:host(.ds-sk) .ds-tree__label {
+  flex: 0 1 auto;
+  margin-right: auto;
+}

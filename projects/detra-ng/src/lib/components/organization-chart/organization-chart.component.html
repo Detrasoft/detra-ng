@@ -3,15 +3,15 @@
   [class.ds-org-chart-vertical]="orientation === 'vertical'"
   [class.ds-org-chart-horizontal]="orientation === 'horizontal'"
 >
-  <div class="ds-org-chart-canvas" *ngIf="value?.length; else emptyState">
+  <div class="ds-org-chart-canvas" *ngIf="nodes?.length; else emptyState">
     <ds-organization-chart-node
-      *ngFor="let rootNode of value; trackBy: trackByNode"
+      *ngFor="let rootNode of nodes; trackBy: trackByNode"
       [node]="rootNode"
       [orientation]="orientation"
       [selectionMode]="selectionMode"
       [selection]="selection"
       [collapsible]="collapsible"
-      [nodeTemplate]="nodeTemplate"
+      [nodeTemplate]="sk.active() ? undefined : nodeTemplate"
       (nodeSelect)="nodeSelect.emit($event)"
       (nodeUnselect)="nodeUnselect.emit($event)"
       (nodeExpand)="nodeExpand.emit($event)"

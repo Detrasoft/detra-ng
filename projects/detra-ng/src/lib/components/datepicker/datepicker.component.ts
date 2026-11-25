@@ -12,6 +12,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { DS_SKELETON_HOST, DsSkeletonDirective } from '../skeleton/skeleton.directive';
 
 /* ═══════════════════════════════════════════
    Locale & Types
@@ -116,6 +117,7 @@ export const DATEPICKER_LOCALE_EN: DatepickerLocale = {
 
 @Component({
   selector: 'ds-datepicker',
+  hostDirectives: [DS_SKELETON_HOST],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule],
@@ -135,7 +137,7 @@ export const DATEPICKER_LOCALE_EN: DatepickerLocale = {
       [class.ds-datepicker--open]="isOpen"
     >
       <!-- Label -->
-      <label *ngIf="label" class="ds-datepicker__label" [attr.for]="inputId">
+      <label *ngIf="label" class="ds-datepicker__label" [attr.for]="inputId" data-sk="text">
         {{ label }}
         <span *ngIf="required" class="ds-datepicker__required">*</span>
       </label>
@@ -146,6 +148,7 @@ export const DATEPICKER_LOCALE_EN: DatepickerLocale = {
           [id]="inputId"
           type="text"
           class="ds-datepicker__field"
+          data-sk
           [value]="displayValue"
           [placeholder]="placeholder"
           [disabled]="disabled"
@@ -156,6 +159,7 @@ export const DATEPICKER_LOCALE_EN: DatepickerLocale = {
         <button
           type="button"
           class="ds-datepicker__toggle"
+          data-sk-hide
           [disabled]="disabled"
           (click)="toggleCalendar()"
           tabindex="-1"
@@ -272,8 +276,8 @@ export const DATEPICKER_LOCALE_EN: DatepickerLocale = {
       </div>
 
       <!-- Error / Hint -->
-      <span *ngIf="error" class="ds-datepicker__error">{{ error }}</span>
-      <span *ngIf="hint && !error" class="ds-datepicker__hint">{{ hint }}</span>
+      <span *ngIf="error" class="ds-datepicker__error" data-sk="text">{{ error }}</span>
+      <span *ngIf="hint && !error" class="ds-datepicker__hint" data-sk="text">{{ hint }}</span>
     </div>
   `,
 })

@@ -7,11 +7,13 @@ import {
   EventEmitter,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { DS_SKELETON_HOST, DsSkeletonDirective } from '../skeleton/skeleton.directive';
 
 export type InfoboxColor = 'primary' | 'info' | 'success' | 'warning' | 'danger';
 
 @Component({
   selector: 'ds-infobox',
+  hostDirectives: [DS_SKELETON_HOST],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule],

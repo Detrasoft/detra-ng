@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ToastService, ToastMessage } from './toast.service';
+import { DS_SKELETON_HOST, DsSkeletonDirective } from '../skeleton/skeleton.directive';
 
 @Component({
   selector: 'ds-toast',
+  hostDirectives: [DS_SKELETON_HOST],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule],
@@ -14,7 +16,7 @@ import { ToastService, ToastMessage } from './toast.service';
         class="ds-toast-message ds-toast-message--{{ toast.type }}"
         role="alert"
       >
-        <div class="ds-toast__icon">
+        <div class="ds-toast__icon" data-sk="circle">
           <svg
             *ngIf="toast.type === 'success'"
             width="20"
@@ -78,10 +80,10 @@ import { ToastService, ToastMessage } from './toast.service';
           </svg>
         </div>
         <div class="ds-toast__content">
-          <h4 *ngIf="toast.title" class="ds-toast__title">{{ toast.title }}</h4>
-          <p class="ds-toast__text">{{ toast.message }}</p>
+          <h4 *ngIf="toast.title" class="ds-toast__title" data-sk="text">{{ toast.title }}</h4>
+          <p class="ds-toast__text" data-sk="text">{{ toast.message }}</p>
         </div>
-        <button class="ds-toast__close" (click)="close(toast.id)" aria-label="Fechar">
+        <button class="ds-toast__close" data-sk-hide (click)="close(toast.id)" aria-label="Fechar">
           <svg
             width="16"
             height="16"

@@ -21,9 +21,11 @@ import {
 } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
 import { Subscription } from 'rxjs';
+import { DS_SKELETON_HOST, DsSkeletonDirective } from '../skeleton/skeleton.directive';
 
 @Component({
   selector: 'ds-time',
+  hostDirectives: [DS_SKELETON_HOST],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, OverlayModule],
@@ -34,7 +36,7 @@ import { Subscription } from 'rxjs';
       [class.ds-time--error]="error"
       [class.ds-time--disabled]="disabled"
     >
-      <label *ngIf="label" class="ds-time__label" [attr.for]="inputId">
+      <label *ngIf="label" class="ds-time__label" [attr.for]="inputId" data-sk="text">
         {{ label }}
         <span *ngIf="required" class="ds-time__required">*</span>
       </label>
@@ -44,6 +46,7 @@ import { Subscription } from 'rxjs';
           type="button"
           [id]="inputId"
           class="ds-time__field"
+          data-sk
           [class.ds-time__field--focused]="isPanelOpen"
           [disabled]="disabled"
           (click)="onToggle($event)"
@@ -71,8 +74,8 @@ import { Subscription } from 'rxjs';
         </button>
       </div>
 
-      <span *ngIf="error" class="ds-time__error">{{ error }}</span>
-      <span *ngIf="hint && !error" class="ds-time__hint">{{ hint }}</span>
+      <span *ngIf="error" class="ds-time__error" data-sk="text">{{ error }}</span>
+      <span *ngIf="hint && !error" class="ds-time__hint" data-sk="text">{{ hint }}</span>
     </div>
 
     <!-- ═══════════════════════════════════════════

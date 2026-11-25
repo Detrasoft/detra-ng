@@ -1,0 +1,123 @@
+name: Publish to NPM
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'projects/detra-ng/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/publish.yml'
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Incremento de versão antes de publicar'
+        required: true
+        default: 'none'
+        type: choice
+        options:
+          - none
+          - patch
+          - minor
+          - major
+      dist_tag:
+        description: 'Tag de distribuição no NPM'
+        required: true
+        default: 'latest'
+        type: choice
+        options:
+          - latest
+          - beta
+          - next
+
+concurrency:
+  group: npm-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  publish:
+    name: Build & Publish @detrasoft.com/detra-ng
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Bump version (workflow_dispatch)
+        if: github.event_name == 'workflow_dispatch' && inputs.version_bump != 'none'
+        run: |
+          node scripts/bump-version.mjs "${{ inputs.version_bump }}"
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json projects/detra-ng/package.json package-lock.json README.md CHANGELOG.md
+          git commit -m "chore: bump version to ${NEW_VERSION} [skip ci]"
+          git push origin HEAD:main
+
+      - name: Check if version is already published
+        id: check_version
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          PKG_NAME=$(node -p "require('./package.json').name")
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          echo "version=${PKG_VERSION}" >> "$GITHUB_OUTPUT"
+
+          if npm view "${PKG_NAME}@${PKG_VERSION}" version >/dev/null 2>&1; then
+            echo "already_published=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::A versão ${PKG_NAME}@${PKG_VERSION} já está publicada no NPM. Build será validado, mas o publish será ignorado."
+          else
+            echo "already_published=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build library (ng-packagr)
+        run: npm run build
+
+      - name: Verify build artifacts
+        run: |
+          test -f dist/detra-ng/package.json
+          test -f dist/detra-ng/index.d.ts
+          test -f dist/detra-ng/fesm2022/detrasoft.com-detra-ng.mjs
+
+      - name: Publish to NPM
+        if: steps.check_version.outputs.already_published == 'false'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "${NODE_AUTH_TOKEN}" ]; then
+            echo "::error::Secret NPM_TOKEN não configurado. Crie um Granular Access Token no npmjs.com com 'Bypass two-factor authentication (2FA)' habilitado e salve em Settings -> Secrets and variables -> Actions -> NPM_TOKEN."
+            exit 1
+          fi
+
+          DIST_TAG="${{ inputs.dist_tag || 'latest' }}"
+          npm publish --access=public --tag="${DIST_TAG}" --ignore-scripts
+
+      - name: Create and push git tag
+        if: steps.check_version.outputs.already_published == 'false' && !startsWith(github.ref, 'refs/tags/')
+        run: |
+          TAG="v${{ steps.check_version.outputs.version }}"
+          if ! git rev-parse "${TAG}" >/dev/null 2>&1; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag "${TAG}"
+            git push origin "${TAG}"
+          fi

@@ -7,21 +7,21 @@
 
     <!-- ── Header ── -->
     <div class="ep-header">
-      <div class="ep-header__icon-wrap">
+      <div class="ep-header__icon-wrap" data-sk>
         <i class="fa-solid fa-circle-exclamation"></i>
       </div>
       <div class="ep-header__text">
-        <h2 class="ep-header__title">{{ error.title || 'Preenchimento incorreto' }}</h2>
-        <p class="ep-header__detail">{{ error.detail }}</p>
+        <h2 class="ep-header__title" data-sk="text">{{ error.title || 'Preenchimento incorreto' }}</h2>
+        <p class="ep-header__detail" data-sk="text">{{ error.detail }}</p>
       </div>
-      <button class="ep-close" (click)="dismiss()" aria-label="Fechar">
+      <button class="ep-close" data-sk-hide (click)="dismiss()" aria-label="Fechar">
         <i class="fa-solid fa-xmark"></i>
       </button>
     </div>
 
     <!-- ── Error count badge ── -->
     <div class="ep-badge-row">
-      <span class="ep-badge">
+      <span class="ep-badge" data-sk="pill">
         <i class="fa-solid fa-list-check"></i>
         {{ errorCount }}
         {{ errorCount === 1 ? 'campo precisa de atenção' : 'campos precisam de atenção' }}
@@ -32,9 +32,9 @@
     <div class="ep-body">
       <div class="ep-group" *ngFor="let group of groupedErrors; let gi = index">
         <div class="ep-group__header">
-          <i [class]="group.icon" class="ep-group__icon"></i>
-          <span class="ep-group__label">{{ group.label }}</span>
-          <span class="ep-group__count">{{ group.errors.length }}</span>
+          <i [class]="group.icon" class="ep-group__icon" data-sk="circle"></i>
+          <span class="ep-group__label" data-sk="text">{{ group.label }}</span>
+          <span class="ep-group__count" data-sk="pill">{{ group.errors.length }}</span>
         </div>
         <ul class="ep-group__list">
           <li
@@ -43,7 +43,7 @@
             [style.animation-delay]="gi * 80 + i * 50 + 'ms'"
           >
             <span class="ep-error-item__bullet"></span>
-            <span class="ep-error-item__msg">{{ err.message }}</span>
+            <span class="ep-error-item__msg" data-sk="text">{{ err.message }}</span>
           </li>
         </ul>
       </div>
@@ -51,11 +51,11 @@
 
     <!-- ── Footer ── -->
     <div class="ep-footer">
-      <p class="ep-footer__hint">
+      <p class="ep-footer__hint" data-sk="text">
         <i class="fa-solid fa-arrow-rotate-left"></i>
         Corrija os campos acima e tente salvar novamente
       </p>
-      <button class="ep-footer__btn" (click)="dismiss()">
+      <button class="ep-footer__btn" data-sk (click)="dismiss()">
         <i class="fa-solid fa-pen-to-square"></i>
         Voltar ao formulário
       </button>

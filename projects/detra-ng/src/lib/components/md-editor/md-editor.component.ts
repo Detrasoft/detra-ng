@@ -24,6 +24,7 @@ import {
   FlowchartEdge,
   FlowchartResult,
 } from '../flowchart-editor/flowchart-editor.component';
+import { DS_SKELETON_HOST, DsSkeletonDirective } from '../skeleton/skeleton.directive';
 
 let nextId = 0;
 
@@ -125,6 +126,7 @@ const COLOR_SENTINEL = '#010203';
 
 @Component({
   selector: 'ds-md-editor',
+  hostDirectives: [DS_SKELETON_HOST],
   standalone: true,
   imports: [CommonModule, FormsModule, FlowchartEditorComponent],
   template: `
@@ -133,7 +135,7 @@ const COLOR_SENTINEL = '#010203';
       [class.ds-md-editor--error]="error"
       [class.ds-md-editor--disabled]="disabled"
     >
-      <label *ngIf="label" class="ds-md-editor__label" [attr.for]="inputId">
+      <label *ngIf="label" class="ds-md-editor__label" [attr.for]="inputId" data-sk="text">
         {{ label }}
         <span *ngIf="required" class="ds-md-editor__required">*</span>
       </label>
@@ -168,6 +170,7 @@ const COLOR_SENTINEL = '#010203';
                 <button
                   type="button"
                   class="ds-md-brush"
+                  data-sk="circle"
                   [class.is-on]="isExpanded"
                   (click)="toggleExpanded()"
                   [attr.aria-expanded]="isExpanded"
@@ -177,13 +180,13 @@ const COLOR_SENTINEL = '#010203';
                   <i class="fa-solid fa-paintbrush" aria-hidden="true"></i>
                 </button>
               } @else {
-                <span class="ds-md-brush ds-md-brush--static" aria-hidden="true">
+                <span class="ds-md-brush ds-md-brush--static" aria-hidden="true" data-sk="circle">
                   <i class="fa-solid fa-paintbrush"></i>
                 </span>
               }
 
               <div class="ds-md-bar__reveal" [attr.aria-hidden]="!isExpanded" [attr.inert]="isExpanded ? null : ''">
-                <div class="ds-md-bar__track" [class.can-left]="canScrollLeft" [class.can-right]="canScrollRight">
+                <div class="ds-md-bar__track" data-sk="pill" [class.can-left]="canScrollLeft" [class.can-right]="canScrollRight">
                  <div class="ds-md-bar__scroll" (scroll)="onTrackScroll()">
                   <button type="button" class="ds-md-group" style="--i: 0" data-group="style"
                     [class.is-open]="openGroup === 'style'"
@@ -345,6 +348,7 @@ const COLOR_SENTINEL = '#010203';
           #editorArea
           [id]="inputId"
           class="editor-area"
+          data-sk
           [attr.contenteditable]="!disabled"
           [attr.data-placeholder]="placeholder"
           [style.min-height]="minHeight"
@@ -373,7 +377,7 @@ const COLOR_SENTINEL = '#010203';
           (cancel)="onFlowchartCancel()"
         ></ds-flowchart-editor>
 
-        <div *ngIf="error" class="editor-error">
+        <div *ngIf="error" class="editor-error" data-sk="text">
           <i class="fa-solid fa-circle-exclamation"></i>
           {{ error }}
         </div>

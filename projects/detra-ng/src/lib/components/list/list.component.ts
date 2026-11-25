@@ -25,9 +25,11 @@ import { Overlay, OverlayModule, OverlayRef } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
 import { Subscription } from 'rxjs';
 import { ListColumnDirective } from './list-column.directive';
+import { DS_SKELETON_HOST, DS_SKELETON_ROWS, DsSkeletonDirective } from '../skeleton/skeleton.directive';
 
 @Component({
   selector: 'ds-list',
+  hostDirectives: [DS_SKELETON_HOST],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, OverlayModule],
@@ -207,7 +209,18 @@ import { ListColumnDirective } from './list-column.directive';
             </th>
           </tr>
         </thead>
-        <tbody>
+        <!-- ── Skeleton Rows ([skeleton]) ── -->
+        <tbody *ngIf="sk.active()" class="ds-sk" aria-busy="true">
+          <tr *ngFor="let r of skRows" class="ds-sk-row">
+            <td *ngFor="let col of columns" [style.width]="col.width || null" [style.text-align]="col.align">
+              <span data-sk class="ds-sk-line"></span>
+            </td>
+            <td *ngIf="actionsTemplate" class="ds-list__actions-td">
+              <div class="ds-list__actions-wrapper"><span data-sk class="ds-sk-chip"></span></div>
+            </td>
+          </tr>
+        </tbody>
+        <tbody *ngIf="!sk.active()">
           <!-- ── Grouped Rows ── -->
           <ng-container *ngIf="groupBy; else flatRows">
             <ng-container *ngFor="let group of groupedData">
@@ -356,6 +369,19 @@ import { ListColumnDirective } from './list-column.directive';
          MOBILE CARD VIEW + INFINITE SCROLL
          ═══════════════════════════════════════════ -->
     <div class="ds-list__card-container" data-testid="ds-list-cards">
+      <!-- ── Skeleton Cards ([skeleton]) ── -->
+      <ng-container *ngIf="sk.active(); else mobileContent">
+        <div *ngFor="let r of skRows | slice: 0 : 3" class="ds-sk ds-sk-row ds-list__card" aria-busy="true">
+          <div class="ds-list__card-header"><span data-sk class="ds-sk-title"></span></div>
+          <div class="ds-list__card-body" *ngIf="restColumns.length > 0">
+            <div *ngFor="let col of restColumns" class="ds-list__card-field">
+              <span class="ds-list__card-label">{{ col.label }}</span>
+              <span data-sk class="ds-sk-line"></span>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+      <ng-template #mobileContent>
       <!-- ── Grouped Mobile View ── -->
       <ng-container *ngIf="groupBy; else flatMobileCards">
         <ng-container *ngFor="let group of mobileGroupedData">
@@ -512,11 +538,16 @@ import { ListColumnDirective } from './list-column.directive';
       <div *ngIf="data.length === 0" class="ds-list__empty-card">
         {{ emptyMessage }}
       </div>
+      </ng-template>
     </div>
   </ng-template>
   `,
 })
 export class ListComponent implements OnChanges, AfterViewInit, OnDestroy {
+  /** Estado do skeleton (`[skeleton]`), via host directive. */
+  readonly sk = inject(DsSkeletonDirective);
+  readonly skRows = DS_SKELETON_ROWS;
+
   private readonly ngZone = inject(NgZone);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly overlay = inject(Overlay);

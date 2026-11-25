@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component, Input, forwardRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@angular/forms';
+import { DS_SKELETON_HOST, DsSkeletonDirective } from '../skeleton/skeleton.directive';
 
 @Component({
   selector: 'ds-textarea',
+  hostDirectives: [DS_SKELETON_HOST],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, ReactiveFormsModule],
@@ -13,7 +15,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@a
       [class.ds-textarea--error]="error"
       [class.ds-textarea--disabled]="disabled"
     >
-      <label *ngIf="label" class="ds-textarea__label" [attr.for]="inputId">
+      <label *ngIf="label" class="ds-textarea__label" [attr.for]="inputId" data-sk="text">
         {{ label }}
         <span *ngIf="required" class="ds-textarea__required">*</span>
       </label>
@@ -25,12 +27,13 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@a
           [value]="value"
           [rows]="rows"
           class="ds-textarea__field"
+          data-sk
           (input)="onInput($event)"
           (blur)="onTouched()"
         ></textarea>
       </div>
-      <span *ngIf="error" class="ds-textarea__error">{{ error }}</span>
-      <span *ngIf="hint && !error" class="ds-textarea__hint">{{ hint }}</span>
+      <span *ngIf="error" class="ds-textarea__error" data-sk="text">{{ error }}</span>
+      <span *ngIf="hint && !error" class="ds-textarea__hint" data-sk="text">{{ hint }}</span>
     </div>
   `,
   styleUrl: './textarea.component.css',

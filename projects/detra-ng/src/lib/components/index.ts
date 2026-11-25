@@ -88,3 +88,12 @@ export {
   CALENDAR_LOCALE_PT_BR,
   CALENDAR_LOCALE_EN,
 } from './calendar/calendar.component';
+// Skeleton (embutido em todos os componentes via [skeleton])
+export {
+  DsSkeletonDirective,
+  DS_SKELETON_HOST,
+  DS_SKELETON_ROWS,
+  ensureSkeletonStyles,
+  SkeletonComponent,
+  type SkeletonVariant,
+} from './skeleton/index';

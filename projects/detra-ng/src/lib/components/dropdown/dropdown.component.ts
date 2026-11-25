@@ -24,6 +24,7 @@ import {
 } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
 import { Subscription } from 'rxjs';
+import { DS_SKELETON_HOST, DsSkeletonDirective } from '../skeleton/skeleton.directive';
 
 /* ═══════════════════════════════════════════
    Dropdown Component
@@ -31,6 +32,7 @@ import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'ds-dropdown',
+  hostDirectives: [DS_SKELETON_HOST],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, OverlayModule],
@@ -49,7 +51,7 @@ import { Subscription } from 'rxjs';
       [class.ds-dropdown--disabled]="disabled"
     >
       <!-- Label -->
-      <label *ngIf="label" class="ds-dropdown__label" [attr.for]="inputId">
+      <label *ngIf="label" class="ds-dropdown__label" [attr.for]="inputId" data-sk="text">
         {{ label }}
         <span *ngIf="required" class="ds-dropdown__required">*</span>
       </label>
@@ -59,6 +61,7 @@ import { Subscription } from 'rxjs';
         <button
           type="button"
           class="ds-dropdown__field"
+          data-sk
           [class.ds-dropdown__field--focused]="isPanelOpen"
           [class.ds-dropdown__field--disabled]="disabled"
           [disabled]="disabled"
@@ -106,8 +109,8 @@ import { Subscription } from 'rxjs';
       </div>
 
       <!-- Error / Hint -->
-      <span *ngIf="error" class="ds-dropdown__error">{{ error }}</span>
-      <span *ngIf="hint && !error" class="ds-dropdown__hint">{{ hint }}</span>
+      <span *ngIf="error" class="ds-dropdown__error" data-sk="text">{{ error }}</span>
+      <span *ngIf="hint && !error" class="ds-dropdown__hint" data-sk="text">{{ hint }}</span>
     </div>
 
     <!-- ═══════════════════════════════════════════

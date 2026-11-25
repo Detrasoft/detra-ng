@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, forwardRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@angular/forms';
+import { DS_SKELETON_HOST, DsSkeletonDirective } from '../skeleton/skeleton.directive';
 
 @Component({
   selector: 'ds-input',
+  hostDirectives: [DS_SKELETON_HOST],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, ReactiveFormsModule],
@@ -13,7 +15,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@a
       [class.ds-input--error]="error"
       [class.ds-input--disabled]="disabled"
     >
-      <label *ngIf="label" class="ds-input__label" [attr.for]="inputId">
+      <label *ngIf="label" class="ds-input__label" [attr.for]="inputId" data-sk="text">
         {{ label }}
         <span *ngIf="required" class="ds-input__required">*</span>
       </label>
@@ -26,12 +28,13 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@a
           [value]="value"
           [attr.autocomplete]="autocomplete"
           class="ds-input__field"
+          data-sk
           (input)="onInput($event)"
           (blur)="onTouched()"
         />
       </div>
-      <span *ngIf="error" class="ds-input__error">{{ error }}</span>
-      <span *ngIf="hint && !error" class="ds-input__hint">{{ hint }}</span>
+      <span *ngIf="error" class="ds-input__error" data-sk="text">{{ error }}</span>
+      <span *ngIf="hint && !error" class="ds-input__hint" data-sk="text">{{ hint }}</span>
     </div>
   `,
   styleUrl: './input.component.css',

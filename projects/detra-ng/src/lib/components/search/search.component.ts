@@ -35,6 +35,7 @@ import {
 import { of } from 'rxjs';
 import { DETRA_SEARCH_ADAPTER } from '../../search/search.tokens';
 import { DetraSearchAdapter, DetraSearchColumn, DetraSearchResponse } from '../../search/search.types';
+import { DS_SKELETON_HOST, DS_SKELETON_ROWS } from '../skeleton/skeleton.directive';
 
 /* ═══════════════════════════════════════════
    Filter Option — internal type
@@ -68,6 +69,7 @@ interface ChipRow {
 
 @Component({
   selector: 'ds-search',
+  hostDirectives: [DS_SKELETON_HOST],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, OverlayModule],
@@ -87,7 +89,7 @@ interface ChipRow {
       [class.ds-search--multiple]="multiple"
     >
       <!-- Label -->
-      <label *ngIf="label" class="ds-search__label">
+      <label *ngIf="label" class="ds-search__label" data-sk="text">
         {{ label }}
         <span *ngIf="required" class="ds-search__required">*</span>
       </label>
@@ -96,6 +98,7 @@ interface ChipRow {
       <div class="ds-search__container" #origin>
         <div
           class="ds-search__field-row"
+          data-sk
           [class.ds-search__field-row--focused]="isFocused"
           [class.ds-search__field-row--disabled]="disabled"
           [class.ds-search__field-row--has-results]="isResultsPanelOpen"
@@ -202,8 +205,8 @@ interface ChipRow {
         </div>
       </div>
 
-      <span *ngIf="error" class="ds-search__error-msg">{{ error }}</span>
-      <span *ngIf="hint && !error" class="ds-search__hint-msg">{{ hint }}</span>
+      <span *ngIf="error" class="ds-search__error-msg" data-sk="text">{{ error }}</span>
+      <span *ngIf="hint && !error" class="ds-search__hint-msg" data-sk="text">{{ hint }}</span>
     </div>
 
     <ng-template #filterPanelTemplate>
@@ -224,9 +227,14 @@ interface ChipRow {
 
     <ng-template #resultsPanelTemplate>
       <div class="ds-search__results-panel" role="listbox" (scroll)="onResultsScroll($event)">
-        <div *ngIf="searching && !loadingMore" class="ds-search__loading">
-          <span class="ds-search__loading-spinner"></span>
-          <span>Buscando…</span>
+        <div *ngIf="searching && !loadingMore" class="ds-sk" aria-busy="true" aria-label="Buscando…">
+          <div *ngFor="let r of skRows | slice: 0 : 3" class="ds-sk-row ds-search__result-item">
+            <span data-sk class="ds-sk-line"></span>
+            <div class="ds-search__result-details">
+              <span data-sk class="ds-sk-chip"></span>
+              <span data-sk class="ds-sk-chip"></span>
+            </div>
+          </div>
         </div>
 
         <ng-container *ngIf="!searching || loadingMore">
@@ -275,6 +283,8 @@ interface ChipRow {
   `,
 })
 export class SearchComponent implements ControlValueAccessor, OnInit, OnDestroy {
+  readonly skRows = DS_SKELETON_ROWS;
+
   private readonly overlay = inject(Overlay);
   private readonly vcr = inject(ViewContainerRef);
   private readonly adapter = inject<DetraSearchAdapter>(DETRA_SEARCH_ADAPTER);

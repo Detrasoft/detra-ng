@@ -15,9 +15,11 @@ import {
   FlowchartData,
   FlowchartResult,
 } from '../flowchart-editor/flowchart-editor.component';
+import { DS_SKELETON_HOST, DsSkeletonDirective } from '../skeleton/skeleton.directive';
 
 @Component({
   selector: 'ds-html-editor',
+  hostDirectives: [DS_SKELETON_HOST],
   standalone: true,
   imports: [CommonModule, FormsModule, FlowchartEditorComponent],
   template: `
@@ -26,7 +28,7 @@ import {
       [class.ds-html-editor--error]="error"
       [class.ds-html-editor--disabled]="disabled"
     >
-      <label *ngIf="label" class="ds-html-editor__label" [attr.for]="inputId">
+      <label *ngIf="label" class="ds-html-editor__label" [attr.for]="inputId" data-sk="text">
         {{ label }}
         <span *ngIf="required" class="ds-html-editor__required">*</span>
       </label>
@@ -38,7 +40,7 @@ import {
       >
         <!-- Toolbar -->
         <div class="editor-toolbar" *ngIf="!disabled">
-          <div class="toolbar-group">
+          <div class="toolbar-group" data-sk>
             <button type="button" class="toolbar-btn" (click)="toggleBold()" title="Negrito">
               <i class="fa-solid fa-bold"></i>
             </button>
@@ -65,7 +67,7 @@ import {
 
           <div class="toolbar-separator"></div>
 
-          <div class="toolbar-group">
+          <div class="toolbar-group" data-sk>
             <div class="font-picker-wrapper">
               <button
                 type="button"
@@ -128,7 +130,7 @@ import {
 
           <div class="toolbar-separator"></div>
 
-          <div class="toolbar-group">
+          <div class="toolbar-group" data-sk>
             <button type="button" class="toolbar-btn" (click)="setHeading('H1')" title="Título 1">
               H1
             </button>
@@ -177,7 +179,7 @@ import {
 
           <div class="toolbar-separator"></div>
 
-          <div class="toolbar-group">
+          <div class="toolbar-group" data-sk>
             <button
               type="button"
               class="toolbar-btn"
@@ -198,7 +200,7 @@ import {
 
           <div class="toolbar-separator"></div>
 
-          <div class="toolbar-group">
+          <div class="toolbar-group" data-sk>
             <button
               type="button"
               class="toolbar-btn"
@@ -235,7 +237,7 @@ import {
 
           <div class="toolbar-separator"></div>
 
-          <div class="toolbar-group">
+          <div class="toolbar-group" data-sk>
             <div class="color-picker-wrapper">
               <button
                 type="button"
@@ -496,6 +498,7 @@ import {
           #editorArea
           [id]="inputId"
           class="editor-area"
+          data-sk
           [attr.contenteditable]="!disabled"
           data-testid="editor-area"
           [attr.data-placeholder]="placeholder"
@@ -508,7 +511,7 @@ import {
           (mouseup)="checkActiveTable()"
         ></div>
 
-        <div *ngIf="error" class="editor-error">
+        <div *ngIf="error" class="editor-error" data-sk="text">
           <i class="fa-solid fa-circle-exclamation"></i>
           {{ error }}
         </div>

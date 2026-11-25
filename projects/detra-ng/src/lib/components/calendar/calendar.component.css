@@ -1109,37 +1109,10 @@ html.theme-dark .ds-calendar__list-item-title,
 /* ══════════════════════════════════════════
    Skeleton Shimmer Placeholders
    ══════════════════════════════════════════ */
-@keyframes dsShimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
+/* Cores e animação vêm do skeleton compartilhado (data-sk, ver components/skeleton). */
 .ds-calendar__skeleton-pill,
 .ds-calendar__skeleton-block {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.04) 25%,
-    rgba(255, 255, 255, 0.12) 50%,
-    rgba(255, 255, 255, 0.04) 75%
-  );
-  background-size: 200% 100%;
-  animation: dsShimmer 1.6s ease-in-out infinite;
   border-radius: 4px;
-}
-
-html:not(.dark):not(.theme-dark) .ds-calendar__skeleton-pill,
-html:not(.dark):not(.theme-dark) .ds-calendar__skeleton-block {
-  background: linear-gradient(
-    90deg,
-    rgba(0, 0, 0, 0.04) 25%,
-    rgba(0, 0, 0, 0.09) 50%,
-    rgba(0, 0, 0, 0.04) 75%
-  );
-  background-size: 200% 100%;
 }
 
 .ds-calendar__skeleton-events {

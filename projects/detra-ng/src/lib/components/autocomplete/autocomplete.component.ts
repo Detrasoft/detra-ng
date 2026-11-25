@@ -28,6 +28,7 @@ import {
 import { TemplatePortal } from '@angular/cdk/portal';
 import { Subject, Subscription } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
+import { DS_SKELETON_HOST, DS_SKELETON_ROWS } from '../skeleton/skeleton.directive';
 
 /* ═══════════════════════════════════════════
    Precomputed view-model rows.
@@ -58,6 +59,7 @@ interface ChipRow {
 
 @Component({
   selector: 'ds-autocomplete',
+  hostDirectives: [DS_SKELETON_HOST],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, OverlayModule],
@@ -76,7 +78,7 @@ interface ChipRow {
       [class.ds-autocomplete--disabled]="disabled"
     >
       <!-- Label -->
-      <label *ngIf="label" class="ds-autocomplete__label" [attr.for]="inputId">
+      <label *ngIf="label" class="ds-autocomplete__label" [attr.for]="inputId" data-sk="text">
         {{ label }}
         <span *ngIf="required" class="ds-autocomplete__required">*</span>
       </label>
@@ -85,6 +87,7 @@ interface ChipRow {
       <div class="ds-autocomplete__container" #origin>
         <div
           class="ds-autocomplete__field-wrapper"
+          data-sk
           [class.ds-autocomplete__field-wrapper--focused]="isFocused"
           [class.ds-autocomplete__field-wrapper--disabled]="disabled"
           [class.ds-autocomplete__field-wrapper--has-dropdown]="dropdown"
@@ -134,6 +137,7 @@ interface ChipRow {
           *ngIf="dropdown"
           type="button"
           class="ds-autocomplete__toggle"
+          data-sk-hide
           [class.ds-autocomplete__toggle--open]="isPanelOpen"
           [disabled]="disabled"
           tabindex="-1"
@@ -156,8 +160,8 @@ interface ChipRow {
       </div>
 
       <!-- Error / Hint -->
-      <span *ngIf="error" class="ds-autocomplete__error">{{ error }}</span>
-      <span *ngIf="hint && !error" class="ds-autocomplete__hint">{{ hint }}</span>
+      <span *ngIf="error" class="ds-autocomplete__error" data-sk="text">{{ error }}</span>
+      <span *ngIf="hint && !error" class="ds-autocomplete__hint" data-sk="text">{{ hint }}</span>
     </div>
 
     <!-- ═══════════════════════════════════════════
@@ -171,9 +175,10 @@ interface ChipRow {
         [attr.aria-label]="label || 'Sugestões'"
       >
         <!-- Loading -->
-        <div *ngIf="loading" class="ds-autocomplete__loading">
-          <span class="ds-autocomplete__spinner"></span>
-          <span>Carregando…</span>
+        <div *ngIf="loading" class="ds-sk" aria-busy="true" aria-label="Carregando…">
+          <div *ngFor="let r of skRows | slice: 0 : 3" class="ds-sk-row ds-autocomplete__item">
+            <span data-sk class="ds-sk-line"></span>
+          </div>
         </div>
 
         <!-- Items (precomputed per suggestion set, not per CD) -->
@@ -220,6 +225,8 @@ interface ChipRow {
 export class AutocompleteComponent
   implements ControlValueAccessor, OnInit, OnChanges, OnDestroy
 {
+  readonly skRows = DS_SKELETON_ROWS;
+
   private readonly overlay = inject(Overlay);
   private readonly vcr = inject(ViewContainerRef);
   private readonly cdr = inject(ChangeDetectorRef);

@@ -4,7 +4,7 @@
 
 <!-- Entry point: renders the root-level nodes -->
 <div class="ds-tree" role="tree">
-  <ng-container *ngFor="let node of value; trackBy: trackByKey">
+  <ng-container *ngFor="let node of sk.active() ? skNodes : value; trackBy: trackByKey">
     <ng-container
       *ngTemplateOutlet="nodeTemplate; context: { $implicit: node, depth: 0 }"
     ></ng-container>
@@ -30,6 +30,7 @@
       <button
         *ngIf="hasChildren(node)"
         class="ds-tree__toggle"
+        data-sk-hide
         [class.ds-tree__toggle--open]="node.expanded"
         (click)="toggleExpand(node, $event)"
         type="button"
@@ -50,6 +51,7 @@
       >
         <span
           class="ds-tree__checkbox-box"
+          data-sk
           [class.ds-tree__checkbox-box--checked]="getCheckState(node) === 'checked'"
           [class.ds-tree__checkbox-box--indeterminate]="getCheckState(node) === 'indeterminate'"
         >
@@ -67,15 +69,16 @@
       </label>
 
       <!-- Icon -->
-      <i *ngIf="node.icon" class="ds-tree__icon" [class]="node.icon"></i>
+      <i *ngIf="node.icon" class="ds-tree__icon" [class]="node.icon" data-sk="circle"></i>
 
       <!-- Label -->
-      <span class="ds-tree__label">{{ node.label }}</span>
+      <span class="ds-tree__label" data-sk="text">{{ node.label }}</span>
 
       <!-- Selection badge for branch nodes -->
       <span
         *ngIf="selectionMode === 'checkbox' && hasChildren(node)"
         class="ds-tree__badge"
+        data-sk="pill"
         [class.ds-tree__badge--active]="getSelectionCount(node).selected > 0"
       >
         {{ getSelectionCount(node).selected }}/{{ getSelectionCount(node).total }}

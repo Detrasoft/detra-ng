@@ -14,6 +14,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { TabComponent } from './tab.component';
+import { DS_SKELETON_HOST, DsSkeletonDirective } from '../skeleton/skeleton.directive';
 
 /**
  * Reusable tabbar component for navigating between tab panels.
@@ -34,6 +35,7 @@ import { TabComponent } from './tab.component';
  */
 @Component({
   selector: 'ds-tabbar',
+  hostDirectives: [DS_SKELETON_HOST],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule],
@@ -51,6 +53,7 @@ import { TabComponent } from './tab.component';
           type="button"
           role="tab"
           class="ds-tabbar__tab"
+          data-sk="pill"
           [class.ds-tabbar__tab--active]="activeTab === tab.id"
           [attr.aria-selected]="activeTab === tab.id"
           [attr.aria-controls]="'panel-' + tab.id"
@@ -69,6 +72,7 @@ import { TabComponent } from './tab.component';
         <button
           type="button"
           class="ds-tabbar__trigger"
+          data-sk
           (click)="toggleMobileMenu()"
           [attr.aria-expanded]="mobileOpen"
         >
@@ -107,7 +111,18 @@ import { TabComponent } from './tab.component';
       <div class="ds-tabbar__panel" role="tabpanel" [attr.id]="'panel-' + activeTab">
         <ng-container *ngFor="let tab of tabs">
           <div
-            [hidden]="tab.id !== activeTab"
+            *ngIf="tab.id === activeTab && (sk.active() || tab.sk.active())"
+            class="ds-sk ds-sk-stack ds-tabbar__panel-enter ds-tabbar__panel-active"
+            aria-busy="true"
+          >
+            <span data-sk class="ds-sk-title"></span>
+            <span data-sk class="ds-sk-line"></span>
+            <span data-sk class="ds-sk-line"></span>
+            <span data-sk class="ds-sk-line"></span>
+            <span data-sk class="ds-sk-line"></span>
+          </div>
+          <div
+            [hidden]="tab.id !== activeTab || sk.active() || tab.sk.active()"
             class="ds-tabbar__panel-enter"
             [class.ds-tabbar__panel-active]="tab.id === activeTab"
           >
@@ -119,6 +134,9 @@ import { TabComponent } from './tab.component';
   `,
 })
 export class TabbarComponent implements AfterContentInit, OnDestroy {
+  /** Estado do skeleton (`[skeleton]`), via host directive. */
+  readonly sk = inject(DsSkeletonDirective);
+
   private readonly cdr = inject(ChangeDetectorRef);
   private tabsSub?: Subscription;
 

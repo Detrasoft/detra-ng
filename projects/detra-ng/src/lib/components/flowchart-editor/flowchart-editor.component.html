@@ -3,10 +3,10 @@
     <!-- ─── Cabeçalho ─── -->
     <header class="modal-header">
       <div class="header-title-wrap">
-        <i class="fa-solid fa-diagram-project header-icon"></i>
-        <h3>{{ title }}</h3>
+        <i class="fa-solid fa-diagram-project header-icon" data-sk="circle"></i>
+        <h3 data-sk="text">{{ title }}</h3>
       </div>
-      <button type="button" class="btn-close" (click)="onCancel()" title="Fechar">
+      <button type="button" class="btn-close" data-sk-hide (click)="onCancel()" title="Fechar">
         <i class="fa-solid fa-xmark"></i>
       </button>
     </header>
@@ -15,17 +15,17 @@
     <div class="modal-toolbar">
       <!-- Adicionar Formas -->
       <div class="toolbar-group">
-        <span class="group-label">Formas:</span>
-        <button type="button" class="btn-tool" (click)="addNode('process')" title="Adicionar Processo">
+        <span class="group-label" data-sk="text">Formas:</span>
+        <button type="button" class="btn-tool" data-sk (click)="addNode('process')" title="Adicionar Processo">
           <i class="fa-solid fa-square-plus"></i> Processo
         </button>
-        <button type="button" class="btn-tool" (click)="addNode('terminal')" title="Adicionar Início / Fim">
+        <button type="button" class="btn-tool" data-sk (click)="addNode('terminal')" title="Adicionar Início / Fim">
           <i class="fa-solid fa-circle-play"></i> Início/Fim
         </button>
-        <button type="button" class="btn-tool" (click)="addNode('decision')" title="Adicionar Decisão Condicional">
+        <button type="button" class="btn-tool" data-sk (click)="addNode('decision')" title="Adicionar Decisão Condicional">
           <i class="fa-solid fa-diamond"></i> Decisão
         </button>
-        <button type="button" class="btn-tool" (click)="addNode('database')" title="Adicionar Banco de Dados">
+        <button type="button" class="btn-tool" data-sk (click)="addNode('database')" title="Adicionar Banco de Dados">
           <i class="fa-solid fa-database"></i> Banco
         </button>
       </div>
@@ -34,7 +34,7 @@
       <div class="toolbar-group">
         <button
           type="button"
-          class="btn-tool"
+          class="btn-tool" data-sk
           [class.active]="connectingSourceId() !== null"
           (click)="toggleConnectMode()"
           [disabled]="!selectedNodeId()"
@@ -44,7 +44,7 @@
           {{ connectingSourceId() ? 'Clique no Destino...' : 'Conectar Nó' }}
         </button>
 
-        <button type="button" class="btn-tool" (click)="toggleDirection()" title="Alternar Direção do Fluxo">
+        <button type="button" class="btn-tool" data-sk (click)="toggleDirection()" title="Alternar Direção do Fluxo">
           <i class="fa-solid fa-repeat"></i>
           Direção: <strong>{{ direction() === 'LR' ? 'Horizontal (LR)' : 'Vertical (TB)' }}</strong>
         </button>
@@ -54,7 +54,7 @@
       <div class="toolbar-group ms-auto">
         <!-- Templates -->
         <div class="dropdown-templates">
-          <button type="button" class="btn-tool" title="Carregar Exemplo">
+          <button type="button" class="btn-tool" data-sk title="Carregar Exemplo">
             <i class="fa-solid fa-wand-magic-sparkles"></i> Exemplos
           </button>
           <div class="templates-menu">
@@ -65,7 +65,7 @@
         </div>
 
         @if (hasSelection()) {
-          <button type="button" class="btn-tool btn-tool--danger" (click)="deleteSelected()" title="Excluir item selecionado">
+          <button type="button" class="btn-tool btn-tool--danger" data-sk (click)="deleteSelected()" title="Excluir item selecionado">
             <i class="fa-solid fa-trash"></i> Excluir
           </button>
         }
@@ -118,6 +118,7 @@
       @for (node of nodes(); track node.id) {
         <div
           class="canvas-node"
+          data-sk
           [class.selected]="selectedNodeId() === node.id"
           [class.connecting-source]="connectingSourceId() === node.id"
           [attr.data-type]="node.type"
@@ -173,16 +174,16 @@
 
     <!-- ─── Rodapé do Modal ─── -->
     <footer class="modal-footer">
-      <div class="footer-stats">
+      <div class="footer-stats" data-sk="text">
         <span><i class="fa-solid fa-cubes me-1"></i> {{ nodes().length }} nós</span>
         <span class="ms-3"><i class="fa-solid fa-arrows-split-up-and-left me-1"></i> {{ edges().length }} conexões</span>
       </div>
 
       <div class="footer-actions">
-        <button type="button" class="fc-btn-action fc-btn-action--ghost" (click)="onCancel()">
+        <button type="button" class="fc-btn-action fc-btn-action--ghost" data-sk (click)="onCancel()">
           Cancelar
         </button>
-        <button type="button" class="fc-btn-action fc-btn-action--primary" (click)="onSave()">
+        <button type="button" class="fc-btn-action fc-btn-action--primary" data-sk (click)="onSave()">
           <i class="fa-solid fa-check me-1"></i> Concluir e Inserir
         </button>
       </div>

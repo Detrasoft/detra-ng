@@ -16,17 +16,18 @@
     <!-- Header -->
     <header class="ds-crop-header">
       <div class="ds-crop-header__title-group">
-        <div class="ds-crop-header__icon" aria-hidden="true">
+        <div class="ds-crop-header__icon" aria-hidden="true" data-sk>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M6 2v14a2 2 0 0 0 2 2h14" />
             <path d="M18 22V8a2 2 0 0 0-2-2H2" />
           </svg>
         </div>
-        <h3 class="ds-crop-header__title">{{ title }}</h3>
+        <h3 class="ds-crop-header__title" data-sk="text">{{ title }}</h3>
       </div>
       <button
         type="button"
         class="ds-crop-header__close"
+        data-sk-hide
         (click)="cancel()"
         aria-label="Fechar modal de recorte"
       >
@@ -41,7 +42,7 @@
     <div class="ds-crop-body">
       <!-- Main Canvas Viewport -->
       <div class="ds-crop-viewport">
-        <div class="ds-crop-canvas-wrapper" #canvasContainer>
+        <div class="ds-crop-canvas-wrapper" #canvasContainer data-sk>
           <canvas
             #cropCanvas
             class="ds-crop-canvas"
@@ -58,7 +59,7 @@
             (touchcancel)="onTouchEnd()"
           ></canvas>
         </div>
-        <span class="ds-crop-hint">
+        <span class="ds-crop-hint" data-sk="text">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/>
           </svg>
@@ -71,10 +72,10 @@
         <!-- Zoom Section -->
         <div class="ds-crop-control-group">
           <div class="ds-crop-control-group__header">
-            <label for="ds-crop-zoom-range" class="ds-crop-label">{{ zoomLabel }}</label>
-            <span class="ds-crop-badge">{{ (scale * 100).toFixed(0) }}%</span>
+            <label for="ds-crop-zoom-range" class="ds-crop-label" data-sk="text">{{ zoomLabel }}</label>
+            <span class="ds-crop-badge" data-sk="pill">{{ (scale * 100).toFixed(0) }}%</span>
           </div>
-          <div class="ds-crop-zoom-bar">
+          <div class="ds-crop-zoom-bar" data-sk="pill">
             <button
               type="button"
               class="ds-crop-icon-btn"
@@ -113,11 +114,12 @@
 
         <!-- Transformation & Rotation Tools -->
         <div class="ds-crop-control-group">
-          <label class="ds-crop-label">{{ rotateLabel }}</label>
+          <label class="ds-crop-label" data-sk="text">{{ rotateLabel }}</label>
           <div class="ds-crop-action-row">
             <button
               type="button"
               class="ds-crop-tool-btn"
+              data-sk
               (click)="rotateLeft()"
               title="Girar 90° para a esquerda"
             >
@@ -130,6 +132,7 @@
             <button
               type="button"
               class="ds-crop-tool-btn"
+              data-sk
               (click)="rotateRight()"
               title="Girar 90° para a direita"
             >
@@ -142,6 +145,7 @@
             <button
               type="button"
               class="ds-crop-tool-btn"
+              data-sk
               (click)="resetTransform()"
               title="Centralizar e resetar ajustes"
             >
@@ -158,8 +162,8 @@
 
         <!-- Live Preview -->
         <div class="ds-crop-preview-card">
-          <div class="ds-crop-label">{{ previewLabel }}</div>
-          <div class="ds-crop-preview-wrapper" [class.ds-crop-preview--circle]="shape === 'circle'">
+          <div class="ds-crop-label" data-sk="text">{{ previewLabel }}</div>
+          <div class="ds-crop-preview-wrapper" data-sk [class.ds-crop-preview--circle]="shape === 'circle'">
             <canvas
               #previewCanvas
               class="ds-crop-preview-canvas"
@@ -167,7 +171,7 @@
               height="80"
             ></canvas>
           </div>
-          <span class="ds-crop-dim-badge">{{ outputWidth }} × {{ outputHeight }} px</span>
+          <span class="ds-crop-dim-badge" data-sk="pill">{{ outputWidth }} × {{ outputHeight }} px</span>
         </div>
       </aside>
     </div>
@@ -177,6 +181,7 @@
       <button
         type="button"
         class="ds-crop-btn ds-crop-btn--secondary"
+        data-sk
         (click)="cancel()"
       >
         {{ cancelLabel }}
@@ -184,6 +189,7 @@
       <button
         type="button"
         class="ds-crop-btn ds-crop-btn--primary"
+        data-sk
         [disabled]="isProcessing"
         (click)="crop()"
       >
