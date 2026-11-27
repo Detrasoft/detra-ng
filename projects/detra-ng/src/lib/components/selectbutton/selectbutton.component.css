@@ -1,0 +1,198 @@
+/* ============================================
+   SelectButton Component
+   Tokens (todos opcionais, com fallback):
+   --ds-selectbutton-bg, --ds-selectbutton-border, --ds-selectbutton-radius, --ds-selectbutton-gap,
+   --ds-selectbutton-padding, --ds-selectbutton-item-radius,
+   --ds-selectbutton-item-bg, --ds-selectbutton-item-text, --ds-selectbutton-item-border,
+   --ds-selectbutton-item-hover-bg, --ds-selectbutton-item-icon,
+   --ds-selectbutton-selected-bg, --ds-selectbutton-selected-text, --ds-selectbutton-selected-border,
+   --ds-selectbutton-selected-shadow, --ds-selectbutton-selected-icon, --ds-selectbutton-focus-ring
+   ============================================ */
+
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.ds-selectbutton-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1, 4px);
+  width: 100%;
+  min-width: 0;
+}
+
+.ds-selectbutton__label {
+  display: block;
+  font-size: var(--text-sm, 0.85rem);
+  font-weight: var(--font-medium, 600);
+  color: var(--input-label, #334155);
+  margin-bottom: 6px;
+}
+
+.ds-selectbutton__required {
+  color: var(--color-danger, #dc2626);
+  margin-left: 2px;
+}
+
+/* ── Grupo ── */
+.ds-selectbutton__group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-selectbutton-gap, 4px);
+  padding: var(--ds-selectbutton-padding, 4px);
+  background: var(--ds-selectbutton-bg, var(--input-bg, #ffffff));
+  border: 1px solid var(--ds-selectbutton-border, var(--input-border, rgba(15, 23, 42, 0.14)));
+  border-radius: var(--ds-selectbutton-radius, var(--radius-md, 12px));
+  min-width: 0;
+}
+
+.ds-selectbutton__group--grid {
+  display: grid;
+}
+
+.ds-selectbutton--error .ds-selectbutton__group {
+  border-color: var(--color-danger, #dc2626);
+}
+
+/* ── Itens ── */
+.ds-selectbutton__item {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 6px 14px;
+  font: inherit;
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--ds-selectbutton-item-text, var(--color-text-secondary, #475569));
+  background: var(--ds-selectbutton-item-bg, transparent);
+  border: 1px solid var(--ds-selectbutton-item-border, transparent);
+  border-radius: var(--ds-selectbutton-item-radius, var(--radius-sm, 8px));
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color var(--transition-fast, 150ms ease),
+    color var(--transition-fast, 150ms ease),
+    border-color var(--transition-fast, 150ms ease),
+    box-shadow var(--transition-fast, 150ms ease);
+}
+
+.ds-selectbutton__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ds-selectbutton__icon {
+  flex-shrink: 0;
+  font-size: 1em;
+  color: var(--ds-selectbutton-item-icon, currentColor);
+}
+
+.ds-selectbutton__item:hover:not(:disabled):not(.ds-selectbutton__item--selected) {
+  background: var(--ds-selectbutton-item-hover-bg, rgba(0, 102, 255, 0.08));
+  color: var(--ds-selectbutton-item-hover-text, var(--color-text-primary, #0f172a));
+}
+
+.ds-selectbutton__item:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--ds-selectbutton-focus-ring, var(--color-primary-500, #0066ff));
+}
+
+.ds-selectbutton__item--selected {
+  color: var(--ds-selectbutton-selected-text, #ffffff);
+  background: var(--ds-selectbutton-selected-bg, var(--color-primary-500, #0066ff));
+  border-color: var(--ds-selectbutton-selected-border, transparent);
+  box-shadow: var(--ds-selectbutton-selected-shadow, 0 6px 16px -8px rgba(0, 102, 255, 0.6));
+}
+
+.ds-selectbutton__item--selected .ds-selectbutton__icon {
+  color: var(--ds-selectbutton-selected-icon, currentColor);
+}
+
+.ds-selectbutton__item--selected:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--ds-selectbutton-bg, #ffffff),
+    0 0 0 4px var(--ds-selectbutton-focus-ring, var(--color-primary-500, #0066ff));
+}
+
+.ds-selectbutton__item:disabled,
+.ds-selectbutton__item--disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* Ícone acima do texto (cartões de escolha, ex.: tipos de conta) */
+.ds-selectbutton__group--top .ds-selectbutton__item {
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 8px;
+  min-height: 64px;
+}
+.ds-selectbutton__group--top .ds-selectbutton__icon {
+  font-size: 1.25em;
+}
+.ds-selectbutton__group--top .ds-selectbutton__text {
+  white-space: normal;
+  text-align: center;
+}
+
+/* ── Tamanhos ── */
+.ds-selectbutton__group--sm .ds-selectbutton__item {
+  min-height: 28px;
+  padding: 4px 10px;
+  font-size: var(--text-xs, 0.75rem);
+}
+.ds-selectbutton__group--sm.ds-selectbutton__group--top .ds-selectbutton__item {
+  min-height: 52px;
+  padding: 8px 6px;
+}
+.ds-selectbutton__group--lg .ds-selectbutton__item {
+  min-height: 44px;
+  padding: 10px 18px;
+  font-size: var(--text-base, 1rem);
+}
+.ds-selectbutton__group--lg.ds-selectbutton__group--top .ds-selectbutton__item {
+  min-height: 80px;
+}
+
+/* ── Estados do grupo ── */
+.ds-selectbutton--disabled .ds-selectbutton__group {
+  opacity: 0.6;
+  background: var(--input-disabled-bg, rgba(15, 23, 42, 0.03));
+}
+.ds-selectbutton--disabled .ds-selectbutton__item {
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+.ds-selectbutton--locked .ds-selectbutton__item {
+  cursor: default;
+}
+.ds-selectbutton--locked .ds-selectbutton__item:hover:not(.ds-selectbutton__item--selected) {
+  background: var(--ds-selectbutton-item-bg, transparent);
+  color: var(--ds-selectbutton-item-text, var(--color-text-secondary, #475569));
+}
+
+/* ── Hint / erro ── */
+.ds-selectbutton__error {
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--color-danger, #dc2626);
+}
+.ds-selectbutton__hint {
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--color-text-muted, #64748b);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-selectbutton__item {
+    transition: none;
+  }
+}

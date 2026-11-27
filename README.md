@@ -6,7 +6,7 @@ pickers, listas, árvores, dialogs, toasts, search genérica e editor HTML
 sem dependências de UI de terceiros (Material, PrimeNG, etc.).
 
 > **Escopo:** `@detrasoft.com/detra-ng`
-> **Versão atual:** `0.6.33` — Angular 17 / 18 / 19 / 20 (peer-deps).
+> **Versão atual:** `0.7.0` — Angular 17 / 18 / 19 / 20 (peer-deps).
 
 ---
 
@@ -15,7 +15,7 @@ sem dependências de UI de terceiros (Material, PrimeNG, etc.).
 | Categoria           | Componentes / APIs                                                                                       |
 | ------------------- | -------------------------------------------------------------------------------------------------------- |
 | Primitivos          | `BadgeComponent`, `ButtonComponent`, `InfoboxComponent`                                                  |
-| Form controls (CVA) | `InputComponent`, `TextareaComponent`, `CheckboxComponent`                                               |
+| Form controls (CVA) | `InputComponent`, `TextareaComponent`, `CheckboxComponent`, `SelectButtonComponent`                        |
 | Layout              | `TabbarComponent`, `TabComponent`                                                                        |
 | Pickers             | `DatepickerComponent` (locale pt-BR / en), `TimeComponent`                                               |
 | Dropdowns           | `DropdownComponent`, `AutocompleteComponent`                                                             |
@@ -129,6 +129,31 @@ import { ToastHostComponent } from "@detrasoft.com/detra-ng";
 })
 export class AppComponent {}
 ```
+
+O visual do toast vem de tokens próprios (fallback sólido, legível em claro e escuro):
+`--ds-toast-bg`, `--ds-toast-text`, `--ds-toast-text-secondary`, `--ds-toast-border`,
+`--ds-toast-backdrop`, `--ds-toast-shadow`. Ele fica em `--z-toast` (100010), acima do `cdk-overlay-container`.
+
+### SelectButton (opções inline)
+
+```html
+<ds-selectbutton
+  formControlName="type"
+  label="Tipo de conta"
+  [options]="[
+    { label: 'Corrente', value: 'CHECKING', icon: 'fa-solid fa-building-columns' },
+    { label: 'Poupança', value: 'SAVINGS', icon: 'fa-solid fa-piggy-bank' },
+    { label: 'Carteira', value: 'WALLET', icon: 'fa-solid fa-wallet' }
+  ]"
+  iconPosition="top"
+  [columns]="3"
+/>
+```
+
+Inputs: `options`, `optionLabel` (`label`), `optionValue` (`value`), `optionIcon` (`icon`), `optionDisabled` (`disabled`),
+`label`, `hint`, `error`, `required`, `inputId`, `multiple`, `allowEmpty`, `disabled`, `locked` (somente leitura),
+`iconPosition` (`left` | `top`), `columns` (`'auto'` | número), `size` (`sm` | `md` | `lg`). Output: `valueChange`.
+Funciona com `formControlName` e `[(ngModel)]`. Tokens de visual: `--ds-selectbutton-*` (ver o CSS do componente).
 
 ---
 

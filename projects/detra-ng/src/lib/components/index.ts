@@ -7,6 +7,13 @@ export { InfoboxComponent, type InfoboxColor } from './infobox/infobox.component
 export { InputComponent } from './input/input.component';
 export { TextareaComponent } from './textarea/textarea.component';
 export { CheckboxComponent } from './checkbox/checkbox.component';
+export { SelectButtonComponent } from './selectbutton/selectbutton.component';
+export type {
+  SelectButtonOption,
+  SelectButtonSize,
+  SelectButtonIconPosition,
+  SelectButtonColumns,
+} from './selectbutton/selectbutton.types';
 
 // Errors
 export { ErrorPanelComponent } from './error-panel/error-panel.component';

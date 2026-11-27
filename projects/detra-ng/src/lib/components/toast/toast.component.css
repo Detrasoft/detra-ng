@@ -6,7 +6,8 @@
   position: fixed;
   top: var(--space-6);
   right: var(--space-6);
-  z-index: var(--z-toast, 9999);
+  /* Acima do cdk-overlay-container (100000) e de barras fixas do app */
+  z-index: var(--z-toast, 100010);
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
@@ -21,10 +22,15 @@
   min-width: 300px;
   max-width: 400px;
   padding: var(--space-4);
-  background-color: var(--color-surface);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
+  /* Superfície própria do toast: nunca herda --color-surface (que pode ser vidro quase transparente) */
+  background: var(--ds-toast-bg, #ffffff);
+  color: var(--ds-toast-text, var(--color-text-primary, #0f172a));
+  border: 1px solid var(--ds-toast-border, rgba(15, 23, 42, 0.10));
   border-left: 4px solid transparent;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--ds-toast-shadow, 0 20px 45px -15px rgba(2, 6, 23, 0.38));
+  -webkit-backdrop-filter: var(--ds-toast-backdrop, blur(18px) saturate(150%));
+  backdrop-filter: var(--ds-toast-backdrop, blur(18px) saturate(150%));
   animation: dsToastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   transition: all var(--transition-base);
 }
@@ -48,13 +54,13 @@
 .ds-toast__title {
   font-size: var(--text-sm);
   font-weight: var(--font-semibold);
-  color: var(--color-text-primary);
+  color: var(--ds-toast-title, var(--ds-toast-text, var(--color-text-primary, #0f172a)));
   margin: 0;
 }
 
 .ds-toast__text {
   font-size: var(--text-sm);
-  color: var(--color-text-secondary);
+  color: var(--ds-toast-text-secondary, var(--ds-toast-text, var(--color-text-primary, #334155)));
   margin: 0;
   line-height: 1.4;
 }
@@ -69,15 +75,44 @@
   background: transparent;
   border: none;
   border-radius: var(--radius-sm);
-  color: var(--color-text-muted);
+  color: var(--ds-toast-close, var(--color-text-muted, #64748b));
   cursor: pointer;
   transition: all var(--transition-fast);
   margin-left: var(--space-2);
 }
 
 .ds-toast__close:hover {
-  background-color: var(--color-neutral-100);
-  color: var(--color-text-primary);
+  background-color: var(--ds-toast-close-hover-bg, rgba(15, 23, 42, 0.06));
+  color: var(--ds-toast-text, var(--color-text-primary, #0f172a));
+}
+
+.ds-toast__close:focus-visible {
+  outline: 2px solid var(--color-primary-500, #0066ff);
+  outline-offset: 1px;
+}
+
+/* ── Tema escuro: fallbacks sólidos quando o app não define os tokens ── */
+:host-context(html.dark) .ds-toast-message {
+  background: var(--ds-toast-bg, #16203a);
+  color: var(--ds-toast-text, var(--color-text-primary, #f1f5f9));
+  /* sem border-left: a cor semântica da variante continua valendo */
+  border-top-color: var(--ds-toast-border, rgba(255, 255, 255, 0.12));
+  border-right-color: var(--ds-toast-border, rgba(255, 255, 255, 0.12));
+  border-bottom-color: var(--ds-toast-border, rgba(255, 255, 255, 0.12));
+  box-shadow: var(--ds-toast-shadow, 0 20px 45px -15px rgba(0, 0, 0, 0.65));
+}
+:host-context(html.dark) .ds-toast__title {
+  color: var(--ds-toast-title, var(--ds-toast-text, var(--color-text-primary, #f8fafc)));
+}
+:host-context(html.dark) .ds-toast__text {
+  color: var(--ds-toast-text-secondary, var(--ds-toast-text, var(--color-text-primary, #e2e8f0)));
+}
+:host-context(html.dark) .ds-toast__close {
+  color: var(--ds-toast-close, var(--color-text-muted, #94a3b8));
+}
+:host-context(html.dark) .ds-toast__close:hover {
+  background-color: var(--ds-toast-close-hover-bg, rgba(255, 255, 255, 0.08));
+  color: var(--ds-toast-text, #f8fafc);
 }
 
 /* ── Variants ── */
