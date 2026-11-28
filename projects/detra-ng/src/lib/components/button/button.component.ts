@@ -23,7 +23,8 @@ import { DS_SKELETON_HOST, DsSkeletonDirective } from '../skeleton/skeleton.dire
   styleUrl: './button.component.css',
 })
 export class ButtonComponent {
-  @Input() variant: 'primary' | 'secondary' | 'outline' | 'danger' | 'success' | 'ghost' = 'primary';
+  @Input() variant: 'primary' | 'secondary' | 'outline' | 'danger' | 'success' | 'warning' | 'ghost' =
+    'primary';
   @Input() size: 'sm' | 'md' | 'lg' = 'md';
   @Input() type: 'button' | 'submit' | 'reset' = 'button';
   @Input() disabled = false;

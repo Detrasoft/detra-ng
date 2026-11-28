@@ -5,6 +5,12 @@ Todas as mudanças relevantes neste projeto serão documentadas aqui.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [0.8.1] — 2026-11-28
+
+### Adicionado
+
+- **`ds-button`**: `variant="warning"` (amarelo `--color-warning`, hover `--color-warning-dark`, texto escuro `--btn-warning-text` com padrão `#3d2e00` para manter contraste). Usado em ações reversíveis que pedem atenção, como "Arquivar conta".
+
 ## [0.8.0] — 2026-11-28
 
 ### Adicionado

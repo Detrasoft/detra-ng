@@ -142,6 +142,21 @@
 .ds-btn--success:active:not(:disabled) {
   transform: translateY(0);
 }
+.ds-btn--warning {
+  background-color: var(--color-warning);
+  /* Amarelo pede texto escuro para passar no contraste (branco sobre #ffc107 fica ~1.6:1). */
+  color: var(--btn-warning-text, #3d2e00);
+  border-color: var(--color-warning);
+}
+.ds-btn--warning:hover:not(:disabled) {
+  background-color: var(--color-warning-dark);
+  border-color: var(--color-warning-dark);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+.ds-btn--warning:active:not(:disabled) {
+  transform: translateY(0);
+}
 
 .ds-btn--ghost {
   background-color: transparent;
