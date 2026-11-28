@@ -52,6 +52,12 @@ export class DialogComponent implements OnDestroy {
 
   @Input() cardClass = 'ds-dialog-card';
   @Input() closeOnBackdropClick = true;
+  /**
+   * Destrói o overlay quando o Router navega (inclusive mudança só de query params).
+   * Padrão `false`: telas que sincronizam seleção na URL (`router.navigate([], { queryParams })`)
+   * fechavam a gaveta sem avisar. O overlay já é destruído no `ngOnDestroy`.
+   */
+  @Input() disposeOnNavigation = false;
 
   private _isOpen = false;
   @Input()
@@ -73,6 +79,7 @@ export class DialogComponent implements OnDestroy {
 
   @ViewChild('dialogTemplate') dialogTemplate!: TemplateRef<unknown>;
   private overlayRef: OverlayRef | null = null;
+  private closingInternally = false;
 
   ngOnDestroy(): void {
     this.close();
@@ -85,7 +92,7 @@ export class DialogComponent implements OnDestroy {
   }
 
   private open(): void {
-    if (this.overlayRef) return;
+    if (this.overlayRef || !this._isOpen) return;
 
     if (!this.dialogTemplate) {
       // Defer execution until view is initialized
@@ -103,17 +110,34 @@ export class DialogComponent implements OnDestroy {
       positionStrategy,
       scrollStrategy: this.overlay.scrollStrategies.block(),
       hasBackdrop: false,
-      disposeOnNavigation: true,
+      disposeOnNavigation: this.disposeOnNavigation,
+    });
+
+    const ref = this.overlayRef;
+    // Overlay destruído por fora (ex.: navegação com disposeOnNavigation): sincroniza o estado
+    // para que o próximo [isOpen]="true" abra de novo, e avisa o pai via onClose.
+    ref.detachments().subscribe(() => {
+      if (this.overlayRef !== ref) return;
+      this.overlayRef = null;
+      if (this._isOpen) {
+        this._isOpen = false;
+        if (!this.closingInternally) this.onClose.emit();
+      }
     });
 
     const portal = new TemplatePortal(this.dialogTemplate, this.vcr);
-    this.overlayRef.attach(portal);
+    ref.attach(portal);
   }
 
   private close(): void {
-    if (this.overlayRef) {
-      this.overlayRef.dispose();
-      this.overlayRef = null;
+    const ref = this.overlayRef;
+    if (!ref) return;
+    this.overlayRef = null;
+    this.closingInternally = true;
+    try {
+      ref.dispose();
+    } finally {
+      this.closingInternally = false;
     }
   }
 }

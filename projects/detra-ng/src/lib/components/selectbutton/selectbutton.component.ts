@@ -58,7 +58,7 @@ import type {
         [class.ds-selectbutton__group--sm]="size === 'sm'"
         [class.ds-selectbutton__group--lg]="size === 'lg'"
         [class.ds-selectbutton__group--top]="iconPosition === 'top'"
-        [style.grid-template-columns]="gridTemplate"
+        [style.--ds-select-cols]="gridCols"
         [id]="inputId || null"
         [attr.role]="multiple ? 'group' : 'radiogroup'"
         [attr.aria-labelledby]="label ? labelId : null"
@@ -168,10 +168,14 @@ export class SelectButtonComponent implements ControlValueAccessor {
 
   /* ── Template helpers ── */
 
-  get gridTemplate(): string | null {
+  /**
+   * Nº de colunas do modo grade, exposto como `--ds-select-cols`. O CSS monta o
+   * `grid-template-columns`: no desktop cada coluna tem pelo menos a largura do rótulo
+   * (sem quebra de linha); no mobile (≤ 640px) as colunas dividem o espaço e o texto pode quebrar.
+   */
+  get gridCols(): number | null {
     if (this.columns === 'auto') return null;
-    const n = Math.max(1, Math.floor(Number(this.columns) || 1));
-    return `repeat(${n}, minmax(0, 1fr))`;
+    return Math.max(1, Math.floor(Number(this.columns) || 1));
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

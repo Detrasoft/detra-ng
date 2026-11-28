@@ -127,15 +127,19 @@
 
 /* ── Grouped Rows ── */
 .ds-list__group-row {
-  background-color: var(--surface-bg-hover, rgba(137, 111, 244, 0.08));
+  background-color: var(--ds-list-group-row-bg, var(--surface-bg-hover, rgba(137, 111, 244, 0.08)));
 }
 
 .ds-list__group-cell {
-  padding: 0.65rem 1rem !important;
-  border-top: 1px solid var(--surface-border-strong, rgba(0, 0, 0, 0.08));
-  border-bottom: 1px solid var(--surface-border-strong, rgba(0, 0, 0, 0.08));
+  padding: var(--ds-list-group-cell-padding, 0.65rem 1rem) !important;
+  border-top: 1px solid var(--ds-list-group-header-border, var(--surface-border-strong, rgba(0, 0, 0, 0.08)));
+  border-bottom: 1px solid var(--ds-list-group-header-border, var(--surface-border-strong, rgba(0, 0, 0, 0.08)));
   font-weight: 700;
-  color: var(--theme-text-primary, #373151);
+  color: var(--ds-list-group-header-color, var(--theme-text-primary, #373151));
+}
+
+.ds-list__group-row:first-child .ds-list__group-cell {
+  border-top: none;
 }
 
 .ds-list__group-header {
@@ -282,18 +286,30 @@
 }
 
 @media (min-width: 1024px) {
-  .ds-list__card-container {
+  .ds-list__card-container:not(.ds-list__card-container--always) {
     display: none;
   }
 }
 
+/* Cabeçalho de grupo no mobile — glass, tudo sobrescrevível por tokens:
+   --ds-list-group-header-bg/-border/-padding/-radius/-blur/-shadow/-color.
+   Com groupHeaderTemplate próprio, o app pode zerar a caixa:
+   --ds-list-group-header-bg: transparent; --ds-list-group-header-border: transparent; --ds-list-group-header-padding: 0. */
 .ds-list__mobile-group-header {
   margin-top: var(--space-3, 0.75rem);
   margin-bottom: var(--space-1, 0.25rem);
-  padding: 0.55rem 0.9rem;
-  background: var(--surface-bg-hover, rgba(137, 111, 244, 0.12));
-  border-radius: var(--radius-md, 12px);
-  border: 1px solid var(--surface-border-strong, rgba(137, 111, 244, 0.18));
+  padding: var(--ds-list-group-header-padding, 0.55rem 0.9rem);
+  color: var(--ds-list-group-header-color, inherit);
+  background: var(--ds-list-group-header-bg, var(--surface-bg-hover, rgba(137, 111, 244, 0.12)));
+  backdrop-filter: blur(var(--ds-list-group-header-blur, 10px));
+  -webkit-backdrop-filter: blur(var(--ds-list-group-header-blur, 10px));
+  border-radius: var(--ds-list-group-header-radius, var(--radius-md, 12px));
+  border: 1px solid var(--ds-list-group-header-border, var(--surface-border-strong, rgba(137, 111, 244, 0.18)));
+  box-shadow: var(--ds-list-group-header-shadow, none);
+}
+
+.ds-list__mobile-group-header:first-child {
+  margin-top: 0;
 }
 
 /* ── Card ── */

@@ -83,8 +83,12 @@ import { DS_SKELETON_HOST, DsSkeletonDirective } from '../skeleton/skeleton.dire
               ></ng-container>
             </ng-container>
             <ng-template #defaultSelectedTpl>
-              <i *ngIf="hasValue && getSelectedIcon()" [class]="getSelectedIcon()"></i>
-              <span>{{ getDisplayValue() }}</span>
+              <ng-container *ngIf="hasValue">
+                <ng-container
+                  *ngTemplateOutlet="visualTpl; context: { $implicit: getSelectedItem() }"
+                ></ng-container>
+              </ng-container>
+              <span class="ds-dropdown__value-text">{{ getDisplayValue() }}</span>
             </ng-template>
           </span>
 
@@ -116,6 +120,26 @@ import { DS_SKELETON_HOST, DsSkeletonDirective } from '../skeleton/skeleton.dire
     <!-- ═══════════════════════════════════════════
          Overlay Panel Template
          ═══════════════════════════════════════════ -->
+    <!-- Ícone (FontAwesome) colorido por optionColor, ou bolinha de cor quando só há cor -->
+    <ng-template #visualTpl let-item>
+      <ng-container *ngIf="getItemIcon(item) as icon; else colorDotTpl">
+        <i
+          class="ds-dropdown__option-icon"
+          [ngClass]="icon"
+          [style.color]="getItemColor(item)"
+          aria-hidden="true"
+        ></i>
+      </ng-container>
+      <ng-template #colorDotTpl>
+        <span
+          *ngIf="getItemColor(item) as color"
+          class="ds-dropdown__option-dot"
+          [style.background-color]="color"
+          aria-hidden="true"
+        ></span>
+      </ng-template>
+    </ng-template>
+
     <ng-template #panelTemplate>
       <div
         class="ds-dropdown__panel"
@@ -175,9 +199,9 @@ import { DS_SKELETON_HOST, DsSkeletonDirective } from '../skeleton/skeleton.dire
           </ng-container>
 
           <ng-template #defaultItemTpl>
-            <span style="display: inline-flex; align-items: center; gap: 8px;">
-              <i *ngIf="item?.icone || item?.icon" [class]="item.icone || item.icon"></i>
-              <span>{{ getItemLabel(item) }}</span>
+            <span class="ds-dropdown__item-content">
+              <ng-container *ngTemplateOutlet="visualTpl; context: { $implicit: item }"></ng-container>
+              <span class="ds-dropdown__item-text">{{ getItemLabel(item) }}</span>
             </span>
           </ng-template>
         </button>
@@ -200,6 +224,10 @@ export class DropdownComponent implements ControlValueAccessor, OnDestroy {
   @Input() options: any[] = [];
   @Input() optionLabel = '';
   @Input() optionValue = '';
+  /** Campo da opção com a classe do ícone FontAwesome (ex.: `fa-solid fa-wallet`). Cai em `icone`/`icon`. */
+  @Input() optionIcon = 'icon';
+  /** Campo da opção com a cor (hex/CSS) do ícone; sem ícone, vira uma bolinha de cor. */
+  @Input() optionColor = 'color';
   @Input() emptyMessage = 'Nenhuma opção disponível.';
   @Input() placeholder = 'Selecione...';
   @Input() label = '';
@@ -313,11 +341,21 @@ export class DropdownComponent implements ControlValueAccessor, OnDestroy {
 
   getSelectedIcon(): string | null {
     if (!this.hasValue) return null;
-    const selectedItem = this.findMatchingItem(this.value) || this.value;
-    if (selectedItem && typeof selectedItem === 'object') {
-      return selectedItem.icone || selectedItem.icon || null;
-    }
-    return null;
+    return this.getItemIcon(this.getSelectedItem());
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getItemIcon(item: any): string | null {
+    if (item == null || typeof item !== 'object') return null;
+    const raw = (this.optionIcon && this.resolveField(item, this.optionIcon)) || item.icone || item.icon;
+    return typeof raw === 'string' && raw.trim() !== '' ? raw.trim() : null;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getItemColor(item: any): string | null {
+    if (item == null || typeof item !== 'object' || !this.optionColor) return null;
+    const raw = this.resolveField(item, this.optionColor);
+    return typeof raw === 'string' && raw.trim() !== '' ? raw.trim() : null;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

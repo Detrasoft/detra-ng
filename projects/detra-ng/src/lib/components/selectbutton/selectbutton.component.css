@@ -49,6 +49,7 @@
 
 .ds-selectbutton__group--grid {
   display: grid;
+  grid-template-columns: repeat(var(--ds-select-cols, 1), minmax(0, 1fr));
 }
 
 .ds-selectbutton--error .ds-selectbutton__group {
@@ -142,6 +143,39 @@
 .ds-selectbutton__group--top .ds-selectbutton__text {
   white-space: normal;
   text-align: center;
+}
+
+/* ── Desktop: rótulo sempre em 1 linha ("Dinheiro em espécie") ──
+   Colunas da grade têm no mínimo a largura do conteúdo; no modo auto (flex) os itens
+   passam para a linha de baixo em vez de encolher. Quebra de texto só no mobile. */
+@media (min-width: 641px) {
+  .ds-selectbutton__group {
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .ds-selectbutton__group--grid {
+    grid-template-columns: repeat(var(--ds-select-cols, 1), minmax(max-content, 1fr));
+  }
+  .ds-selectbutton__item {
+    min-width: max-content;
+  }
+  .ds-selectbutton__text,
+  .ds-selectbutton__group--top .ds-selectbutton__text {
+    white-space: nowrap;
+    overflow: visible;
+    text-overflow: clip;
+  }
+}
+
+/* ── Mobile: o texto pode quebrar para caber ── */
+@media (max-width: 640px) {
+  .ds-selectbutton__group--grid .ds-selectbutton__text {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-align: center;
+    line-height: 1.15;
+  }
 }
 
 /* ── Tamanhos ── */

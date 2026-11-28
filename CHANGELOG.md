@@ -5,6 +5,20 @@ Todas as mudanças relevantes neste projeto serão documentadas aqui.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [0.8.0] — 2026-11-28
+
+### Adicionado
+
+- **`ds-dropdown`**: inputs `optionIcon` (padrão `'icon'`, cai em `icone`/`icon`) e `optionColor` (padrão `'color'`). Opção com ícone FontAwesome (`fa-solid fa-...`) mostra o ícone, colorido por `option[optionColor]` quando informado; opção só com cor mostra uma bolinha. Vale no botão fechado e em cada item da lista.
+- **`ds-list`**: `@Input() groupOrder` (ex.: `['banking', 'cards', 'broker', 'archived']`). Com `groupBy`, os grupos da tabela e dos cards seguem essa sequência; grupos fora da lista vêm depois, na ordem de aparição.
+- **`ds-list` só com cards**: com `cardTemplate` e nenhuma `ds-list-column`, a tabela (e seu `<thead>` vazio) não é montada e os cards aparecem também no desktop.
+- **`ds-list`**: cabeçalho de grupo glass, com tokens `--ds-list-group-header-bg/-border/-padding/-radius/-blur/-shadow/-color`, `--ds-list-group-row-bg` e `--ds-list-group-cell-padding` (dá para zerar a caixa quando o app usa `groupHeaderTemplate` próprio).
+
+### Corrigido
+
+- **`ds-dialog` destruído ao mudar query params**: novo `@Input() disposeOnNavigation`, agora `false` por padrão (antes o overlay era sempre destruído em qualquer navegação, inclusive `router.navigate([], { queryParams })` na mesma rota, deixando a gaveta quebrada). O overlay continua sendo destruído no `ngOnDestroy`. Se o overlay for destruído por fora, o componente sincroniza o estado (`isOpen` volta a abrir) e emite `onClose`.
+- **`ds-selectbutton`**: no desktop (≥ 641px) o rótulo fica sempre em uma linha ("Dinheiro em espécie"): colunas da grade com no mínimo a largura do conteúdo (`--ds-select-cols`) e itens do modo `auto` passam para a linha de baixo em vez de cortar. No mobile (≤ 640px) a grade divide o espaço e o texto pode quebrar.
+
 ## [0.7.0] — 2026-11-27
 
 ### Adicionado

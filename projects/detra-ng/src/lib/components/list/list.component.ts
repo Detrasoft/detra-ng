@@ -171,7 +171,7 @@ import { DS_SKELETON_HOST, DS_SKELETON_ROWS, DsSkeletonDirective } from '../skel
       <!-- ═══════════════════════════════════════════
            DESKTOP TABLE VIEW + PAGINATION
            ═══════════════════════════════════════════ -->
-      <div class="ds-list__table-container" data-testid="ds-list-table">
+      <div class="ds-list__table-container" data-testid="ds-list-table" *ngIf="!cardsOnly">
       <table class="ds-list__table" [class.ds-list__table--resizable]="resizableColumns">
         <thead>
           <tr>
@@ -368,7 +368,11 @@ import { DS_SKELETON_HOST, DS_SKELETON_ROWS, DsSkeletonDirective } from '../skel
     <!-- ═══════════════════════════════════════════
          MOBILE CARD VIEW + INFINITE SCROLL
          ═══════════════════════════════════════════ -->
-    <div class="ds-list__card-container" data-testid="ds-list-cards">
+    <div
+      class="ds-list__card-container"
+      [class.ds-list__card-container--always]="cardsOnly"
+      data-testid="ds-list-cards"
+    >
       <!-- ── Skeleton Cards ([skeleton]) ── -->
       <ng-container *ngIf="sk.active(); else mobileContent">
         <div *ngFor="let r of skRows | slice: 0 : 3" class="ds-sk ds-sk-row ds-list__card" aria-busy="true">
@@ -580,6 +584,11 @@ export class ListComponent implements OnChanges, AfterViewInit, OnDestroy {
 
   // Grouping & Sorting Inputs
   @Input() groupBy?: string;
+  /**
+   * Ordem de negócio dos grupos quando `groupBy` está ativo (ex.: `['banking', 'cards', 'broker', 'archived']`).
+   * Grupos listados aparecem nessa sequência; os demais vêm depois, na ordem em que surgem nos dados.
+   */
+  @Input() groupOrder?: readonly string[] | null;
   @Input() sortKey?: string;
   @Input() sortOrder: 'asc' | 'desc' = 'asc';
 
@@ -800,37 +809,53 @@ export class ListComponent implements OnChanges, AfterViewInit, OnDestroy {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   get groupedData(): { key: string; items: any[] }[] {
-    if (!this.groupBy) return [];
-    const groupsMap = new Map<string, any[]>();
-    const rows = this.sortedPaginatedData;
-    for (const row of rows) {
-      const resolved = this.resolveValue(row, this.groupBy);
-      const groupVal = resolved != null && resolved !== '' ? String(resolved) : 'Sem grupo';
-      if (!groupsMap.has(groupVal)) {
-        groupsMap.set(groupVal, []);
-      }
-      groupsMap.get(groupVal)!.push(row);
-    }
-    return Array.from(groupsMap.entries()).map(([key, items]) => ({ key, items }));
+    return this.buildGroups(this.sortedPaginatedData);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   get mobileGroupedData(): { key: string; items: any[] }[] {
+    return this.buildGroups(this.mobileData);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private buildGroups(rows: any[]): { key: string; items: any[] }[] {
     if (!this.groupBy) return [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const groupsMap = new Map<string, any[]>();
-    const rows = this.mobileData;
     for (const row of rows) {
       const resolved = this.resolveValue(row, this.groupBy);
       const groupVal = resolved != null && resolved !== '' ? String(resolved) : 'Sem grupo';
-      if (!groupsMap.has(groupVal)) {
-        groupsMap.set(groupVal, []);
+      let bucket = groupsMap.get(groupVal);
+      if (!bucket) {
+        bucket = [];
+        groupsMap.set(groupVal, bucket);
       }
-      groupsMap.get(groupVal)!.push(row);
+      bucket.push(row);
     }
-    return Array.from(groupsMap.entries()).map(([key, items]) => ({ key, items }));
+    const groups = Array.from(groupsMap.entries()).map(([key, items]) => ({ key, items }));
+    const order = this.groupOrder;
+    if (!order || order.length === 0) return groups;
+    const rank = new Map<string, number>();
+    order.forEach((key, i) => {
+      const k = String(key);
+      if (!rank.has(k)) rank.set(k, i);
+    });
+    // sort estável: grupos fora de groupOrder mantêm a ordem de aparição, depois dos listados
+    return groups
+      .map((g, i) => ({ g, i, r: rank.has(g.key) ? rank.get(g.key)! : order.length }))
+      .sort((a, b) => a.r - b.r || a.i - b.i)
+      .map((x) => x.g);
   }
 
-  get columnCount(): number {
+  /**
+   * Só `cardTemplate`, sem `ds-list-column`: não há tabela para montar, então os cards
+   * aparecem também no desktop (sem `<thead>` vazio nem cabeçalho redundante).
+   */
+  get cardsOnly(): boolean {
+    return !!this.cardTemplate && (!this.columns || this.columns.length === 0);
+  }
+
+    get columnCount(): number {
     let count = this.columns ? this.columns.length : 0;
     if (this.actionsTemplate) count++;
     return count;
